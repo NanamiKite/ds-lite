@@ -11,7 +11,7 @@
 **非官方第三方客户端，与 DeepSeek 官方无关联。** 对话能力来自
 [DeepSeek 开放平台](https://platform.deepseek.com)，按量计费。
 
-[快速开始](#快速开始) · [导入历史对话](docs/data.md) · [个性与记忆](docs/memory.md) · [对话机制](docs/context.md) · [参与开发](docs/development.md) · [打包 APK](#打包-apk)
+[快速开始](#快速开始) · [导入历史对话](docs/data.md) · [个性与记忆](docs/memory.md) · [对话机制](docs/context.md) · [参与开发](docs/development.md) · [打包 APK](#打包-apk) · [GitHub](https://github.com/NanamiKite/deepseek-lite)
 
 **简体中文**
 
@@ -64,6 +64,8 @@
 ## 快速开始
 
 ```bash
+git clone https://github.com/NanamiKite/deepseek-lite.git
+cd deepseek-lite
 pnpm install        # 或 npm install / yarn
 npx expo start
 ```
