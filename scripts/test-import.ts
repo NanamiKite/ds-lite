@@ -222,6 +222,53 @@ test('ndjson: 坏行超限整体失败', () => {
   assert.throws(() => parseExportText(lines), /无效行过多/);
 });
 
+test('匿名 DeepSeek 会话：重复导入指纹幂等', () => {
+  const raw = JSON.stringify([{
+    title: '没有ID的会话',
+    created_at: 1700000000,
+    messages: [
+      { message_id: 'a', parent_id: null, message_role: 'USER', content: '问题', created_at: 1700000001 },
+      { message_id: 'b', parent_id: 'a', message_role: 'ASSISTANT', content: '回答', created_at: 1700000002 },
+    ],
+  }]);
+  const r1 = parseExportText(raw);
+  const r2 = parseExportText(raw);
+  assert.ok(r1.conversations[0].sourceId, '应生成指纹幂等键');
+  assert.equal(r1.conversations[0].sourceId, r2.conversations[0].sourceId, '两次导入指纹一致');
+});
+
+test('DeepSeek 数字 ID：父子关系可还原', () => {
+  const raw = JSON.stringify([{
+    id: 'num-id', title: 't', created_at: 1700000000,
+    messages: [
+      { message_id: 1, parent_id: null, message_role: 'USER', content: '根', created_at: 1700000001 },
+      { message_id: 2, parent_id: 1, message_role: 'ASSISTANT', content: '子回答', created_at: 1700000002 },
+      { message_id: 3, parent_id: 2, message_role: 'USER', content: '孙提问', created_at: 1700000003 },
+      // 时间最晚的是数字 ID 的中间节点，真叶 4 才应胜出
+      { message_id: 4, parent_id: 3, message_role: 'ASSISTANT', content: '最终回答', created_at: 1700000004 },
+    ],
+  }]);
+  const r = parseExportText(raw);
+  const texts = r.conversations[0].messages.map((m) => m.content).join('|');
+  assert.ok(texts.includes('最终回答'), '数字 ID 链应完整还原到真叶');
+  assert.ok(!r.stats.note?.includes('分支不完整'), `不应有断链：${r.stats.note}`);
+});
+
+test('格式识别：首条消息损坏不误导（DeepSeek 特征字段在后）', () => {
+  const raw = JSON.stringify([{
+    id: 's1', title: 't', created_at: 1700000000,
+    messages: [
+      null,
+      'garbage',
+      { message_id: 'a', parent_id: null, message_role: 'USER', content: '你好', created_at: 1700000001 },
+      { message_id: 'b', parent_id: 'a', message_role: 'ASSISTANT', contentFragments: [{ text: '回你' }], created_at: 1700000002 },
+    ],
+  }]);
+  const r = parseExportText(raw);
+  assert.equal(r.format, 'deepseek-web', '应识别为 deepseek-web 而非 generic');
+  assert.equal(r.conversations[0].messages.length, 2);
+});
+
 const failed = results.filter((r) => !r.ok);
 for (const r of results) {
   console.log(`${r.ok ? '✓' : '✗'} ${r.name}${r.note ? ` — ${r.note}` : ''}`);

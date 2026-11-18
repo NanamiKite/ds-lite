@@ -71,6 +71,26 @@ test('非 data 行不产生事件', () => {
   assert.equal(p.push('event: x\nid: 1\n\n').length, 0);
 });
 
+test('孤立 \\r 换行：事件分隔与行分隔均可解析', () => {
+  const p = createSseParser();
+  const evs = p.push('data: {"a":1}\r\ndata: tail\r\rdata: {"a":2}\r\r');
+  // 末尾悬空的 \r 被保留（可能是 \r\n 前半），第二个事件待 flush
+  assert.equal(evs.length, 1, '\\r\\r 应作为事件边界');
+  assert.equal(evs[0].data, '{"a":1}\ntail', '同一事件内 \\r 行分隔应合并');
+  const evs2 = p.flush();
+  assert.equal(evs2.length, 1);
+  assert.equal(evs2[0].data, '{"a":2}');
+});
+
+test('\\r\\n 跨 chunk 切断：\r 与 \n 分属两个 chunk', () => {
+  const p = createSseParser();
+  assert.equal(p.push('data: {"a":1}\r').length, 0, '末尾孤立 \\r 不应误判为完整换行');
+  const evs = p.push('\n\ndata: {"a":2}\n\n');
+  assert.equal(evs.length, 2);
+  assert.equal(evs[0].data, '{"a":1}');
+  assert.equal(evs[1].data, '{"a":2}');
+});
+
 const failed = results.filter((r) => !r.ok);
 for (const r of results) {
   console.log(`${r.ok ? '✓' : '✗'} ${r.name}${r.note ? ` — ${r.note}` : ''}`);

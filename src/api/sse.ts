@@ -30,11 +30,11 @@ export function createSseParser(): {
 
   const drain = (final: boolean): SseEvent[] => {
     const events: SseEvent[] = [];
-    // 按空行切块（兼容 \r\n）
+    // 按空行切块（已归一化为 \n）
     let idx: number;
-    while ((idx = buffer.search(/\r?\n\r?\n/)) >= 0) {
+    while ((idx = buffer.indexOf('\n\n')) >= 0) {
       const block = buffer.slice(0, idx);
-      buffer = buffer.slice(idx).replace(/^\r?\n\r?\n/, '');
+      buffer = buffer.slice(idx + 2);
       const ev = parseBlock(block);
       if (ev) events.push(ev);
     }
@@ -46,11 +46,26 @@ export function createSseParser(): {
     return events;
   };
 
+  /** 换行归一化：\r\n 与孤立 \r 都转 \n；缓冲末尾的孤立 \r 可能是 \r\n 的前半，保留到下一 chunk */
+  const normalizeBuffer = (final: boolean) => {
+    let safe = buffer;
+    let tail = '';
+    if (!final && safe.endsWith('\r')) {
+      tail = '\r';
+      safe = safe.slice(0, -1);
+    }
+    buffer = safe.replace(/\r\n?/g, '\n') + tail;
+  };
+
   return {
     push: (chunk) => {
       buffer += chunk;
+      normalizeBuffer(false);
       return drain(false);
     },
-    flush: () => drain(true),
+    flush: () => {
+      normalizeBuffer(true);
+      return drain(true);
+    },
   };
 }

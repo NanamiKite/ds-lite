@@ -35,15 +35,23 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 
 function messagesShape(arr: unknown[] | undefined): 'deepseek-web' | 'generic' | null {
   if (!arr?.length) return null;
-  const first = arr[0];
-  if (!isPlainObject(first)) return 'generic';
-  if (
-    'parent_id' in first || 'parent_message_id' in first ||
-    'contentFragments' in first || 'message_role' in first
-  ) return 'deepseek-web';
-  const roleish = 'role' in first || 'type' in first;
-  const contentish = 'content' in first || 'text' in first;
-  return roleish && contentish ? 'generic' : null;
+  const { items } = filterObjects(arr as unknown[]);
+  if (!items.length) return null;
+  // 扫描前若干条有效消息（首条损坏不应误导格式识别）；
+  // DeepSeek 特有字段命中即判 deepseek-web，否则按 role+content 判 generic
+  const sample = items.slice(0, 10);
+  let deepseekHits = 0;
+  let genericHits = 0;
+  for (const first of sample) {
+    if (
+      'parent_id' in first || 'parent_message_id' in first ||
+      'contentFragments' in first || 'message_role' in first
+    ) deepseekHits++;
+    else if (('role' in first || 'type' in first) && ('content' in first || 'text' in first)) genericHits++;
+  }
+  if (deepseekHits > 0) return 'deepseek-web'; // DeepSeek 特有字段出现即优先
+  if (genericHits > 0) return 'generic';
+  return null;
 }
 
 function detectArray(arrRaw: unknown[]): ParsedExport | null {
@@ -55,9 +63,6 @@ function detectArray(arrRaw: unknown[]): ParsedExport | null {
 
   if (isPlainObject(firstObj.mapping)) {
     const { conversations, stats } = parseChatGptConversations(arr);
-    for (const c of conversations) c.sourceId ??= null;
-    // 指纹幂等
-    for (const c of conversations) if (!c.sourceId) c.sourceId = fingerprint(c);
     return {
       format: 'chatgpt-conversations',
       source: 'chatgpt',
@@ -68,7 +73,7 @@ function detectArray(arrRaw: unknown[]): ParsedExport | null {
         conversations: conversations.length,
         messages: stats.messages,
         withoutResponse: 0,
-        skippedRecords: stats.total - conversations.length + malformed,
+        skippedRecords: stats.total - conversations.length + stats.skipped + malformed,
       },
     };
   }
@@ -343,5 +348,9 @@ export function parseExportText(text: string, sourceOverride?: SessionSource): P
     );
   }
   if (sourceOverride) result.source = sourceOverride;
+  // 幂等统一收口：所有无稳定 ID 的会话（匿名 DeepSeek/ChatGPT/gemini 兜底）一律内容指纹
+  for (const c of result.conversations) {
+    if (!c.sourceId) c.sourceId = fingerprint(c);
+  }
   return result;
 }

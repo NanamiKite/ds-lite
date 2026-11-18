@@ -85,17 +85,23 @@ function msgTime(m: DsMessage): number | null {
   return toMs(m.created_at) ?? toMs(m.createdAt) ?? toMs(m.inserted_at) ?? toMs(m.updated_at) ?? toMs(m.updatedAt);
 }
 
-function parentId(m: DsMessage): string | null {
-  const p = m.parent_id ?? m.parent_message_id ?? m.parentMessageId ?? null;
-  return typeof p === 'string' ? p : null;
+/** 消息 ID 归一化：字符串或有限数字 → 字符串（站点导出常见数字 ID） */
+function normalizeId(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim()) return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return null;
 }
 
-/** 建节点表：ID 字符串归一化；重复 ID 追加后缀而非覆盖 */
+function parentId(m: DsMessage): string | null {
+  return normalizeId(m.parent_id ?? m.parent_message_id ?? m.parentMessageId);
+}
+
+/** 建节点表：ID 归一化为字符串；重复 ID 追加后缀而非覆盖 */
 function buildNodeMap(messages: DsMessage[]): Map<string, { m: DsMessage; i: number }> {
   const byId = new Map<string, { m: DsMessage; i: number }>();
   const dupCount = new Map<string, number>();
   messages.forEach((m, i) => {
-    let key = typeof (m.message_id ?? m.id) === 'string' ? String(m.message_id ?? m.id) : `idx-${i}`;
+    let key = normalizeId(m.message_id ?? m.id) ?? `idx-${i}`;
     if (byId.has(key)) {
       const n = (dupCount.get(key) ?? 0) + 1;
       dupCount.set(key, n);
