@@ -11,7 +11,7 @@ const dir = join(process.cwd(), 'scripts', 'fixtures');
 const read = (name: string) => readFileSync(join(dir, name), 'utf-8');
 
 let passed = 0;
-const results: Array<{ name: string; ok: boolean; note?: string }> = [];
+const results: { name: string; ok: boolean; note?: string }[] = [];
 
 function test(name: string, fn: () => void | string) {
   try {

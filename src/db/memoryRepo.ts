@@ -58,7 +58,7 @@ export function addMemory(content: string, source: MemorySource = 'manual'): Mem
 
 export function updateMemory(id: string, patch: { content?: string; active?: boolean }): void {
   const sets: string[] = [];
-  const args: Array<string | number> = [];
+  const args: (string | number)[] = [];
   if (patch.content !== undefined) {
     const t = patch.content.trim();
     if (!t) return;

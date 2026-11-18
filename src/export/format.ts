@@ -11,13 +11,13 @@ export interface ExportSession {
   createdAt: number;
   updatedAt: number;
   digest?: string | null;
-  messages: Array<{
+  messages: {
     role: string;
     content: string;
     reasoning?: string | null;
     createdAt: number;
     status?: string;
-  }>;
+  }[];
 }
 
 export interface ExportMemories {

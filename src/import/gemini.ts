@@ -23,7 +23,7 @@ interface ActivityRecord {
   title?: string;
   titleUrl?: string;
   time?: string;
-  subtitles?: Array<{ name?: string }>;
+  subtitles?: { name?: string }[];
   description?: string;
   response?: string;
   answer?: string;

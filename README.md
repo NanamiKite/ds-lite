@@ -13,6 +13,8 @@
 **非官方第三方客户端，与 DeepSeek 官方无关联。** 对话能力来自
 [DeepSeek 开放平台](https://platform.deepseek.com)，按量计费。
 
+[![CI](https://github.com/NanamiKite/deepseek-lite/actions/workflows/ci.yml/badge.svg)](https://github.com/NanamiKite/deepseek-lite/actions/workflows/ci.yml)
+
 [下载 APK](https://github.com/NanamiKite/deepseek-lite/releases) · [快速开始](#快速开始) · [导入历史对话](docs/data.md) · [个性与记忆](docs/memory.md) · [对话机制](docs/context.md) · [参与开发](docs/development.md)
 
 **简体中文**

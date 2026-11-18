@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  checks:
+    name: Typecheck / Lint / Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Pure-logic tests
+        run: pnpm test:import
+
+  android-bundle:
+    name: Android bundle (Metro + Hermes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Export Android bundle
+        run: npx expo export --platform android --output-dir dist-ci
+        env:
+          EXPO_NO_TELEMETRY: '1'
+          CI: 'true'
+
+      - name: Bundle sanity check
+        run: |
+          test -n "$(find dist-ci -name '*.js' -size +100k)" || { echo "Bundle missing or too small"; exit 1; }
+          echo "Bundle OK:"
+          du -sh dist-ci

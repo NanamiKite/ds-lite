@@ -72,7 +72,7 @@ export async function validateKey(apiKey: string): Promise<KeyValidation> {
       const err = await parseErrorBody(res);
       return { ok: false, models: [], error: err.message };
     }
-    const data = (await res.json()) as { data?: Array<{ id: string }> };
+    const data = (await res.json()) as { data?: { id: string }[] };
     const models = (data.data ?? []).map((m) => m.id);
     let balance: KeyValidation['balance'];
     try {
@@ -81,7 +81,7 @@ export async function validateKey(apiKey: string): Promise<KeyValidation> {
       });
       if (bRes.ok) {
         const b = (await bRes.json()) as {
-          balance_infos?: Array<{ currency: string; total_balance: string }>;
+          balance_infos?: { currency: string; total_balance: string }[];
         };
         const first = b.balance_infos?.[0];
         if (first) balance = { currency: first.currency, amount: first.total_balance };
@@ -143,12 +143,12 @@ export async function chatOnce(opts: StreamChatOptions): Promise<{
 }> {
   const res = await requestChat(opts, false);
   const data = (await res.json()) as {
-    choices?: Array<{
+    choices?: {
       message?: {
         content?: string | null;
         annotations?: Annotation[];
       };
-    }>;
+    }[];
     usage?: Usage;
   };
   const annotations = (data.choices?.[0]?.message?.annotations ?? [])
@@ -173,7 +173,7 @@ export async function streamChat(opts: StreamChatOptions): Promise<void> {
       model?: string;
       title?: string;
       error?: { message?: string; type?: string };
-      choices?: Array<{
+      choices?: {
         finish_reason?: string | null;
         delta?: {
           content?: string | null;
@@ -181,7 +181,7 @@ export async function streamChat(opts: StreamChatOptions): Promise<void> {
           annotations?: Annotation[];
           title?: string;
         };
-      }>;
+      }[];
       usage?: Usage;
     };
     try {

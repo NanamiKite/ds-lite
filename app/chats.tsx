@@ -121,7 +121,7 @@ export default function ChatsScreen() {
       else groups.set(key, [s]);
     }
     const order = ['今天', '昨天', '近 7 天', '近 30 天', '更早'];
-    const result: Array<{ title: string; data: Session[] }> = [];
+    const result: { title: string; data: Session[] }[] = [];
     if (pinned.length) result.push({ title: '置顶', data: pinned });
     for (const key of order) {
       const data = groups.get(key);

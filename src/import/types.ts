@@ -81,7 +81,7 @@ export function cleanText(s: unknown): string {
 
 /** 从首个用户消息生成默认标题 */
 export function titleFromMessages(
-  messages: Array<{ role: string; content: string }>,
+  messages: { role: string; content: string }[],
   fallback = '(未命名)'
 ): string {
   const first = messages.find((m) => m.role === 'user' && m.content.trim());

@@ -14,7 +14,7 @@
 import { parseChatGptConversations } from './chatgpt';
 import { parseDeepSeekWeb } from './deepseek';
 import { parseGeminiActivity, parseGeminiConversations } from './gemini';
-import { LIMITS, cleanText, filterObjects, titleFromMessages, type ExportFormat, type ParsedExport } from './types';
+import { LIMITS, filterObjects, titleFromMessages, type ParsedExport } from './types';
 import type { ImportConversation } from '@/db/repo';
 import type { SessionSource } from '@/types';
 

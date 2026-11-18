@@ -46,10 +46,20 @@ scripts/
 
 ```bash
 pnpm typecheck     # tsc --noEmit
+pnpm lint          # eslint（Expo 官方预设）
 pnpm test:import   # 编译并运行全部纯逻辑测试
 pnpm demo:prompt   # 打印个性+记忆组装后的 system prompt 示例
 npx expo start     # 开发
 ```
+
+## CI
+
+GitHub Actions（[ci.yml](../.github/workflows/ci.yml)），push/PR 触发：
+
+- **checks**：typecheck → lint → 65 个纯逻辑测试（Node 环境，无需模拟器）
+- **android-bundle**：`expo export --platform android` 全量 Metro+Hermes 打包并校验产物，不需要 EAS 凭据
+
+发 Release 的 APK 仍走 EAS（见 README）。
 
 测试用例数：导入解析 25（含损坏输入/坏行容错/真叶分支）、记忆逻辑 16、上下文组装 8、导出格式 3、SSE 流解析 7。
 

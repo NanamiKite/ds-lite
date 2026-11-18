@@ -19,13 +19,12 @@ import {
   updateMessage,
   updateSessionDigest,
   updateSessionSummary,
-} from '@/db/repo';
+ listRecentDigests } from '@/db/repo';
 import { getApiKey } from '@/storage/secure';
 import { addMemory, listMemories } from '@/db/memoryRepo';
 import { dedupeMemories } from '@/memory/parse';
 import { buildCrossChatPrompt, buildMemoryPrompt, buildPersonaPrompt, composeSystemPrompt } from '@/memory/prompt';
 import { extractMemories } from '@/memory/auto';
-import { listRecentDigests } from '@/db/repo';
 import {
   assembleTurnMessages,
   buildDigestPrompt,
@@ -132,7 +131,7 @@ function clampHistoryForSummary(items: HistoryItem[]): HistoryItem[] {
 
 export const useChatStore = create<ChatStore>()((set, get) => {
   /** 发送队列：回复进行中收到的新消息，当前回复结束后自动续发（stop/出错时清空） */
-  const pendingQueue: Array<{ sessionId: string; text: string; opts: SendOptions }> = [];
+  const pendingQueue: { sessionId: string; text: string; opts: SendOptions }[] = [];
 
   async function runCompletion(sessionId: string, opts: SendOptions): Promise<void> {
     const key = await getApiKey();

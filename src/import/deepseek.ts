@@ -25,7 +25,7 @@ interface DsMessage {
   role?: string;
   type?: string;
   content?: unknown;
-  contentFragments?: Array<{ text?: string }>;
+  contentFragments?: { text?: string }[];
   thinking_content?: string;
   reasoning_content?: string;
   thinking?: boolean;

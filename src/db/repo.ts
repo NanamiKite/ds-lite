@@ -258,7 +258,7 @@ export function updateMessage(
   }
 ): void {
   const sets: string[] = [];
-  const args: Array<string | number | null> = [];
+  const args: (string | number | null)[] = [];
   if (patch.content !== undefined) { sets.push('content = ?'); args.push(patch.content); }
   if (patch.reasoning !== undefined) { sets.push('reasoning = ?'); args.push(patch.reasoning); }
   if (patch.status !== undefined) { sets.push('status = ?'); args.push(patch.status); }
@@ -291,13 +291,13 @@ export interface ImportConversation {
   sourceId?: string | null;
   title: string;
   createdAt?: number | null;
-  messages: Array<{
+  messages: {
     role: Role;
     content: string;
     reasoning?: string | null;
     createdAt?: number | null;
     sourceModel?: string | null;
-  }>;
+  }[];
   meta?: ImportedMeta;
 }
 
@@ -379,7 +379,7 @@ export function dbStats(): { sessions: number; messages: number } {
 export function listRecentDigests(
   excludeSessionId: string,
   limit = 5
-): Array<{ id: string; title: string; digest: string; updatedAt: number }> {
+): { id: string; title: string; digest: string; updatedAt: number }[] {
   const rows = getDb().getAllSync<SessionRow>(
     `SELECT * FROM sessions
      WHERE id != ? AND digest IS NOT NULL AND digest != ''
@@ -396,10 +396,10 @@ export function listRecentDigests(
 }
 
 /** 导出全部数据（会话+消息） */
-export function exportAllSessions(): Array<{
+export function exportAllSessions(): {
   id: string; title: string; source: string; createdAt: number; updatedAt: number;
-  digest?: string | null; messages: Array<{ role: string; content: string; reasoning: string | null; createdAt: number; status: string }>;
-}> {
+  digest?: string | null; messages: { role: string; content: string; reasoning: string | null; createdAt: number; status: string }[];
+}[] {
   const db = getDb();
   const sessions = db.getAllSync<SessionRow>('SELECT * FROM sessions ORDER BY updated_at ASC').map(rowToSession);
   return sessions.map((s) => ({
@@ -420,10 +420,10 @@ export function exportAllSessions(): Array<{
 }
 
 /** 从备份恢复（幂等：按会话 id 跳过已存在） */
-export function importBackup(sessions: Array<{
+export function importBackup(sessions: {
   id: string; title: string; source?: string; createdAt?: number; updatedAt?: number;
-  digest?: string | null; messages: Array<{ role: string; content: string; createdAt?: number }>;
-}>): { imported: number; skipped: number } {
+  digest?: string | null; messages: { role: string; content: string; createdAt?: number }[];
+}[]): { imported: number; skipped: number } {
   const db = getDb();
   const result = { imported: 0, skipped: 0 };
   for (const s of sessions) {

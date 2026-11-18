@@ -93,7 +93,7 @@ export default function ChatScreen() {
       role: 'assistant',
       content: live.content,
       reasoning: live.reasoning || null,
-      createdAt: idx >= 0 ? messages[idx].createdAt : Date.now(),
+      createdAt: idx >= 0 ? messages[idx].createdAt : 0,
       status: live.status,
       error: live.error ?? null,
       seq: idx >= 0 ? messages[idx].seq : Number.MAX_SAFE_INTEGER,

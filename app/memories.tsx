@@ -136,7 +136,7 @@ export default function MemoriesScreen() {
         <View style={[styles.modeCard, { borderColor: colors.border }]}>
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600', marginRight: 8 }}>记忆模式</Text>
-            {([['off', '关闭'], ['manual', '仅手动'], ['auto', '自动提取']] as Array<[MemoryMode, string]>).map(([mode, label]) => {
+            {([['off', '关闭'], ['manual', '仅手动'], ['auto', '自动提取']] as [MemoryMode, string][]).map(([mode, label]) => {
               const active = settings.memoryMode === mode;
               return (
                 <Pressable

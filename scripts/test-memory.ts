@@ -3,13 +3,13 @@
  * 覆盖：记忆解析（JSON/粘贴）、去重、提示词组装、提取输出解析
  */
 import assert from 'node:assert/strict';
-import { parseMemoriesText, dedupeMemories, normalizeForDedupe, parseFacts } from '../src/memory/parse';
+import { parseMemoriesText, dedupeMemories, parseFacts } from '../src/memory/parse';
 import {
   buildPersonaPrompt, buildMemoryPrompt, buildCrossChatPrompt, composeSystemPrompt, MAX_MEMORIES_IN_PROMPT,
 } from '../src/memory/prompt';
 
 let passed = 0;
-const results: Array<{ name: string; ok: boolean; note?: string }> = [];
+const results: { name: string; ok: boolean; note?: string }[] = [];
 
 function test(name: string, fn: () => void | string) {
   try {

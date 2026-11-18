@@ -132,7 +132,7 @@ export default function SettingsScreen() {
 
         <Group colors={colors} title="外观">
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {([['system', '跟随系统'], ['light', '浅色'], ['dark', '深色']] as Array<[ThemeMode, string]>).map(([mode, label]) => {
+            {([['system', '跟随系统'], ['light', '浅色'], ['dark', '深色']] as [ThemeMode, string][]).map(([mode, label]) => {
               const active = settings.themeMode === mode;
               return (
                 <Pressable

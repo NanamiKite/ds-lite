@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { createSseParser } from '../src/api/sse';
 
 let passed = 0;
-const results: Array<{ name: string; ok: boolean; note?: string }> = [];
+const results: { name: string; ok: boolean; note?: string }[] = [];
 
 function test(name: string, fn: () => void | string) {
   try {
