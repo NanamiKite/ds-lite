@@ -17,11 +17,15 @@ interface Props {
   search: boolean;
   onToggleThinking: () => void;
   onToggleSearch: () => void;
+  /** 对话级记忆开关（不传则不显示，如全局记忆已关闭） */
+  memoryOn?: boolean;
+  onToggleMemory?: () => void;
 }
 
 export function ChatInput({
   value, onChange, onSend, onStop, busy,
   thinking, search, onToggleThinking, onToggleSearch,
+  memoryOn, onToggleMemory,
 }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -43,6 +47,15 @@ export function ChatInput({
           icon="⌕"
           onPress={onToggleSearch}
         />
+        {!!onToggleMemory && (
+          <Pill
+            colors={colors}
+            active={memoryOn !== false}
+            label="记忆"
+            icon="◉"
+            onPress={onToggleMemory}
+          />
+        )}
       </View>
       <View style={[styles.inputRow]}>
         <TextInput

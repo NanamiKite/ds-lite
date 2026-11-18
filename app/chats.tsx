@@ -1,15 +1,19 @@
 /**
- * 会话列表：搜索、新建、导入入口、长按管理（置顶/重命名/删除）
+ * 会话列表：日期分组、搜索、新建、导入入口
+ * 交互：左滑快捷操作（置顶/导出/删除）、长按完整菜单（主题化 ActionSheet）
  */
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View,
+  Pressable, SectionList, StyleSheet, Text, TextInput, View,
 } from 'react-native';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
 import { shareSessionMarkdown } from '@/export/share';
-import { createSession, listSessions, togglePin, deleteSession, renameSession } from '@/db/repo';
+import {
+  createSession, listSessions, togglePin, deleteSession, renameSession,
+} from '@/db/repo';
 import { SOURCE_COLOR, SOURCE_LABEL, type Session } from '@/types';
 import { useTheme } from '@/theme-context';
 import { useChatStore } from '@/state/chat';
@@ -24,6 +28,18 @@ function timeAgo(ts: number): string {
   const day = Math.floor(h / 24);
   if (day < 30) return `${day} 天前`;
   return new Date(ts).toLocaleDateString('zh-CN');
+}
+
+/** 日期分组：今天/昨天/近 7 天/近 30 天/更早（置顶单独一组） */
+function sectionKey(ts: number): string {
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const today = startOfDay(now);
+  if (ts >= today) return '今天';
+  if (ts >= today - 86400000) return '昨天';
+  if (ts >= today - 7 * 86400000) return '近 7 天';
+  if (ts >= today - 30 * 86400000) return '近 30 天';
+  return '更早';
 }
 
 export default function ChatsScreen() {
@@ -99,13 +115,54 @@ export default function ChatsScreen() {
         ]
     : [];
 
-  const applyRename = () => {
-    if (renaming && renameText.trim()) {
-      renameSession(renaming.id, renameText);
-      reload();
+  const sections = useMemo(() => {
+    const pinned = sessions.filter((s) => s.pinned);
+    const rest = sessions.filter((s) => !s.pinned);
+    const groups = new Map<string, Session[]>();
+    for (const s of rest) {
+      const key = sectionKey(s.updatedAt);
+      const bucket = groups.get(key);
+      if (bucket) bucket.push(s);
+      else groups.set(key, [s]);
     }
-    setRenaming(null);
-  };
+    const order = ['今天', '昨天', '近 7 天', '近 30 天', '更早'];
+    const result: Array<{ title: string; data: Session[] }> = [];
+    if (pinned.length) result.push({ title: '置顶', data: pinned });
+    for (const key of order) {
+      const data = groups.get(key);
+      if (data?.length) result.push({ title: key, data });
+    }
+    return result;
+  }, [sessions]);
+
+  const swipeActions = (s: Session) => (
+    <View style={styles.swipeRow}>
+      <SwipeBtn
+        colors={colors}
+        icon={s.pinned ? '📌×' : '📌'}
+        label={s.pinned ? '取消' : '置顶'}
+        bg={colors.surfaceAlt}
+        fg={colors.textSecondary}
+        onPress={() => { togglePin(s.id); reload(); }}
+      />
+      <SwipeBtn
+        colors={colors}
+        icon="⇪"
+        label="导出"
+        bg={colors.surfaceAlt}
+        fg={colors.primary}
+        onPress={() => { shareSessionMarkdown(s.id).catch(() => undefined); }}
+      />
+      <SwipeBtn
+        colors={colors}
+        icon="🗑"
+        label="删除"
+        bg="#FDE8E8"
+        fg={colors.danger}
+        onPress={() => { setConfirmDelete(true); setSheetSession(s); }}
+      />
+    </View>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -136,9 +193,10 @@ export default function ChatsScreen() {
         />
       </View>
 
-      <FlatList
-        data={sessions}
+      <SectionList
+        sections={sections}
         keyExtractor={(s) => s.id}
+        stickySectionHeadersEnabled={false}
         contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -152,40 +210,49 @@ export default function ChatsScreen() {
             </Pressable>
           </View>
         }
+        renderSectionHeader={({ section }) => (
+          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>{section.title}</Text>
+        )}
         renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [styles.row, { backgroundColor: pressed ? colors.surfaceAlt : 'transparent' }]}
-            onPress={() => router.push(`/chat/${item.id}`)}
-            onLongPress={() => openMenu(item)}
+          <ReanimatedSwipeable
+            renderRightActions={() => swipeActions(item)}
+            overshootRight={false}
+            friction={2}
           >
-            {item.pinned && <Text style={{ color: colors.textTertiary, fontSize: 12 }}>📌 </Text>}
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, { color: colors.text }]} numberOfLines={1}>
-                {item.title}
-              </Text>
-              {item.digest ? (
-                <Text style={[styles.rowDigest, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {item.digest}
+            <Pressable
+              style={({ pressed }) => [styles.row, { backgroundColor: pressed ? colors.surfaceAlt : 'transparent' }]}
+              onPress={() => router.push(`/chat/${item.id}`)}
+              onLongPress={() => openMenu(item)}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: colors.text }]} numberOfLines={1}>
+                  {item.title}
                 </Text>
-              ) : null}
-              <View style={styles.rowMeta}>
-                <Text style={[styles.rowTime, { color: colors.textTertiary }]}>{timeAgo(item.updatedAt)}</Text>
-                {item.source !== 'local' && (
-                  <View style={[styles.badge, { backgroundColor: `${SOURCE_COLOR[item.source]}1A` }]}>
-                    <View style={[styles.badgeDot, { backgroundColor: SOURCE_COLOR[item.source] }]} />
-                    <Text style={{ color: SOURCE_COLOR[item.source], fontSize: 11 }}>
-                      {SOURCE_LABEL[item.source]}
-                    </Text>
-                  </View>
-                )}
+                {item.digest ? (
+                  <Text style={[styles.rowDigest, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {item.digest}
+                  </Text>
+                ) : null}
+                <View style={styles.rowMeta}>
+                  <Text style={[styles.rowTime, { color: colors.textTertiary }]}>{timeAgo(item.updatedAt)}</Text>
+                  {item.pinned && <Text style={[styles.rowTime, { color: colors.textTertiary }]}>· 置顶</Text>}
+                  {item.source !== 'local' && (
+                    <View style={[styles.badge, { backgroundColor: `${SOURCE_COLOR[item.source]}1A` }]}>
+                      <View style={[styles.badgeDot, { backgroundColor: SOURCE_COLOR[item.source] }]} />
+                      <Text style={{ color: SOURCE_COLOR[item.source], fontSize: 11 }}>
+                        {SOURCE_LABEL[item.source]}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
-            </View>
-            <Text style={{ color: colors.textTertiary, fontSize: 20 }}>›</Text>
-          </Pressable>
+              <Text style={{ color: colors.textTertiary, fontSize: 20 }}>›</Text>
+            </Pressable>
+          </ReanimatedSwipeable>
         )}
       />
 
-      {sessions.length > 0 && (
+      {sections.length > 0 && (
         <Pressable
           style={[styles.fab, { backgroundColor: colors.primary }, { bottom: insets.bottom + 18 }]}
           onPress={newChat}
@@ -201,30 +268,26 @@ export default function ChatsScreen() {
         subtitle={confirmDelete ? '删除后无法恢复' : undefined}
         actions={sheetActions}
       />
-
-      <Modal visible={!!renaming} transparent animationType="fade" onRequestClose={() => setRenaming(null)}>
-        <Pressable style={styles.modalMask} onPress={() => setRenaming(null)}>
-          <Pressable style={[styles.modalCard, { backgroundColor: colors.surface }]} onPress={() => undefined}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>重命名对话</Text>
-            <TextInput
-              style={[styles.modalInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-              value={renameText}
-              onChangeText={setRenameText}
-              autoFocus
-              selectTextOnFocus
-            />
-            <View style={styles.modalActions}>
-              <Pressable onPress={() => setRenaming(null)} style={styles.modalBtn}>
-                <Text style={{ color: colors.textSecondary, fontSize: 15 }}>取消</Text>
-              </Pressable>
-              <Pressable onPress={applyRename} style={styles.modalBtn}>
-                <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>确定</Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
+  );
+}
+
+function SwipeBtn({
+  colors, icon, label, bg, fg, onPress,
+}: {
+  colors: ReturnType<typeof useTheme>['colors'];
+  icon: string;
+  label: string;
+  bg: string;
+  fg: string;
+  onPress: () => void;
+}) {
+  void colors;
+  return (
+    <Pressable style={[styles.swipeBtn, { backgroundColor: bg }]} onPress={onPress}>
+      <Text style={{ color: fg, fontSize: 15 }}>{icon}</Text>
+      <Text style={{ color: fg, fontSize: 11.5, marginTop: 2 }}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -238,23 +301,20 @@ const styles = StyleSheet.create({
   headerBtn: { paddingHorizontal: 12, paddingVertical: 6 },
   searchWrap: { paddingHorizontal: 14, paddingVertical: 10 },
   search: { height: 38, borderRadius: 19, paddingHorizontal: 16, fontSize: 14.5 },
+  sectionTitle: { fontSize: 12.5, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 6 },
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 13 },
   rowTitle: { fontSize: 15.5, fontWeight: '500' },
   rowDigest: { fontSize: 12.5, marginTop: 2 },
-  rowMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 },
+  rowMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
   rowTime: { fontSize: 12.5 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 9 },
   badgeDot: { width: 5, height: 5, borderRadius: 3 },
+  swipeRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8, paddingLeft: 8 },
+  swipeBtn: { width: 62, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 120, gap: 6 },
   newBtn: { marginTop: 16, paddingHorizontal: 22, paddingVertical: 11, borderRadius: 22 },
   fab: {
     position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28,
     alignItems: 'center', justifyContent: 'center', elevation: 4, shadowRadius: 8, shadowOpacity: 0.25, shadowOffset: { width: 0, height: 4 },
   },
-  modalMask: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 32 },
-  modalCard: { borderRadius: 16, padding: 20, width: '100%', gap: 14 },
-  modalTitle: { fontSize: 17, fontWeight: '600' },
-  modalInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 15 },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 18 },
-  modalBtn: { paddingVertical: 6, paddingHorizontal: 8 },
 });

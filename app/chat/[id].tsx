@@ -151,7 +151,7 @@ export default function ChatScreen() {
         <Pressable hitSlop={10} onPress={() => router.back()} style={styles.backBtn}>
           <Text style={{ color: colors.text, fontSize: 22 }}>‹</Text>
         </Pressable>
-        <View style={{ flex: 1, alignItems: 'center', maxWidth: 250 }}>
+        <View style={{ flex: 1, alignItems: 'center', maxWidth: 260 }}>
           <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
             {title}
           </Text>
@@ -169,19 +169,8 @@ export default function ChatScreen() {
             )
           )}
         </View>
-        {memoryMode !== 'off' && (
-          <Pressable
-            style={styles.memBtn}
-            hitSlop={8}
-            onPress={() => {
-              const next = memEnabled === false ? true : false;
-              setSessionMemoryEnabled(sessionId, next);
-              setMemEnabled(next);
-            }}
-          >
-            <Text style={{ fontSize: 15, opacity: memEnabled === false ? 0.3 : 1 }}>🧠</Text>
-          </Pressable>
-        )}
+        {/* 固定占位：保证标题始终居中 */}
+        <View style={{ width: 34 }} />
       </View>
 
       {!apiKeyBound && (
@@ -263,6 +252,16 @@ export default function ChatScreen() {
           search={search}
           onToggleThinking={() => setThinking((v) => !v)}
           onToggleSearch={() => setSearch((v) => !v)}
+          memoryOn={memEnabled !== false}
+          onToggleMemory={
+            memoryMode === 'off'
+              ? undefined
+              : () => {
+                  const next = memEnabled === false ? true : false;
+                  setSessionMemoryEnabled(sessionId, next);
+                  setMemEnabled(next);
+                }
+          }
         />
       </KeyboardAvoidingView>
 
@@ -302,5 +301,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 9,
   },
   memoryToast: { marginHorizontal: 12, marginBottom: 6, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  memBtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
 });
