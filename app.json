@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "DeepSeek Lite",
+    "slug": "deepseek-lite",
+    "version": "0.1.0",
+    "scheme": "deepseeklite",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#FFFFFF",
+    "newArchEnabled": true,
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dslite.app"
+    },
+    "android": {
+      "package": "com.dslite.app",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#4D6BFE"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-status-bar",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

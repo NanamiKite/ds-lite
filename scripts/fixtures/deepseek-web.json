@@ -1,0 +1,54 @@
+[
+  {
+    "id": "sess1",
+    "title": "测试会话",
+    "created_at": 1700000100,
+    "updated_at": 1700000200,
+    "messages": [
+      {
+        "message_id": "m0",
+        "parent_id": null,
+        "message_role": "USER",
+        "content": "你好",
+        "created_at": 1700000101
+      },
+      {
+        "message_id": "m1",
+        "parent_id": "m0",
+        "message_role": "ASSISTANT",
+        "contentFragments": [{ "text": "你好！" }, { "text": "有什么可以帮你？" }],
+        "thinking_enabled": true,
+        "search_enabled": false,
+        "created_at": 1700000102
+      },
+      {
+        "message_id": "m2",
+        "parent_id": "m1",
+        "message_role": "USER",
+        "content": "分支A",
+        "created_at": 1700000103
+      },
+      {
+        "message_id": "m3",
+        "parent_id": "m2",
+        "message_role": "ASSISTANT",
+        "content": "分支A回答",
+        "created_at": 1700000104
+      },
+      {
+        "message_id": "m4",
+        "parent_id": "m1",
+        "message_role": "USER",
+        "content": "分支B（最新）",
+        "created_at": 1700000200
+      },
+      {
+        "message_id": "m5",
+        "parent_id": "m4",
+        "message_role": "ASSISTANT",
+        "content": "分支B回答",
+        "created_at": 1700000201
+      }
+    ]
+  }
+]

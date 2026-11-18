@@ -1,0 +1,13 @@
+{
+  "conversations": [
+    {
+      "id": "g1",
+      "title": "Lisbon tips",
+      "create_time": "2026-05-14T09:21:03.512Z",
+      "entries": [
+        { "role": "user", "text": "Plan a 3-day trip to Lisbon" },
+        { "author": "model", "content": "Day 1: Alfama; Day 2: Belém; Day 3: Sintra." }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "module": "node16",
+    "target": "es2022",
+    "moduleResolution": "node16",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmitOnError": true,
+    "outDir": "../.test-dist",
+    "rootDir": "..",
+    "paths": {
+      "@/*": ["../src/*"]
+    },
+    "types": []
+  },
+  "include": [
+    "env.d.ts",
+    "test-import.ts",
+    "test-memory.ts",
+    "test-assemble.ts",
+    "demo-prompt.ts",
+    "../src/import/**/*.ts",
+    "../src/api/search.ts",
+    "../src/chat/assemble.ts",
+    "../src/memory/parse.ts",
+    "../src/memory/prompt.ts"
+  ]
+}

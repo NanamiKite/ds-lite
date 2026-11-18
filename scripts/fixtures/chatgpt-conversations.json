@@ -1,0 +1,59 @@
+[
+  {
+    "title": "Trip plan",
+    "create_time": 1700000000,
+    "update_time": 1700000600,
+    "current_node": "n-asst2b",
+    "default_model_slug": "gpt-4o",
+    "mapping": {
+      "n-root": { "id": "n-root", "parent": null, "children": ["n-sys"], "message": null },
+      "n-sys": {
+        "id": "n-sys", "parent": "n-root", "children": ["n-user1"],
+        "message": { "author": { "role": "system" }, "content": { "content_type": "text", "parts": ["You are helpful"] }, "create_time": 1700000000 }
+      },
+      "n-user1": {
+        "id": "n-user1", "parent": "n-sys", "children": ["n-asst1"],
+        "message": { "author": { "role": "user" }, "create_time": 1700000001, "content": { "content_type": "text", "parts": ["Plan a 3-day trip"] } }
+      },
+      "n-asst1": {
+        "id": "n-asst1", "parent": "n-user1", "children": ["n-user2"],
+        "message": {
+          "author": { "role": "assistant" }, "create_time": 1700000010,
+          "content": { "content_type": "multimodal_text", "parts": ["Day 1: Alfama", { "content_type": "image_asset", "asset_pointer": "file-x" }] }
+        }
+      },
+      "n-user2": {
+        "id": "n-user2", "parent": "n-asst1", "children": ["n-asst2a", "n-asst2b"],
+        "message": { "author": { "role": "user" }, "create_time": 1700000020, "content": { "content_type": "text", "parts": ["What about food?"] } }
+      },
+      "n-asst2a": {
+        "id": "n-asst2a", "parent": "n-user2", "children": [],
+        "message": { "author": { "role": "assistant" }, "create_time": 1700000030, "content": { "content_type": "text", "parts": ["被放弃的分支"] } }
+      },
+      "n-asst2b": {
+        "id": "n-asst2b", "parent": "n-user2", "children": ["n-tool"],
+        "message": { "author": { "role": "assistant" }, "create_time": 1700000040, "content": { "content_type": "text", "parts": ["Try bacalhau and pastel de nata."] } }
+      },
+      "n-tool": {
+        "id": "n-tool", "parent": "n-asst2b", "children": [],
+        "message": { "author": { "role": "tool" }, "content": { "content_type": "text", "parts": ["tool output"] } }
+      }
+    }
+  },
+  {
+    "title": null,
+    "create_time": 1700001000,
+    "update_time": 1700001100,
+    "mapping": {
+      "r": { "id": "r", "parent": null, "children": ["u1"], "message": null },
+      "u1": {
+        "id": "u1", "parent": "r", "children": ["a1"],
+        "message": { "author": { "role": "user" }, "create_time": 1700001001, "content": { "content_type": "text", "parts": ["用一句话介绍里斯本"] } }
+      },
+      "a1": {
+        "id": "a1", "parent": "u1", "children": [],
+        "message": { "author": { "role": "assistant" }, "create_time": 1700001010, "content": { "content_type": "text", "parts": ["里斯本是葡萄牙的海滨首都。"] } }
+      }
+    }
+  }
+]

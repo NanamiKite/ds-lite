@@ -1,0 +1,32 @@
+[
+  {
+    "header": "Gemini Apps",
+    "title": "Prompted Plan a 3-day trip to Lisbon",
+    "titleUrl": "https://gemini.google.com/app/abc123",
+    "time": "2026-05-14T09:21:03.512Z",
+    "products": ["Gemini Apps"],
+    "activityControls": ["Gemini Apps Activity"],
+    "subtitles": [{ "name": "Here's a 3-day Lisbon itinerary: day 1 Alfama..." }]
+  },
+  {
+    "header": "Gemini Apps",
+    "title": "Asked What's a good pastel de nata recipe?",
+    "titleUrl": "https://gemini.google.com/app/abc123",
+    "time": "2026-05-14T09:25:10.000Z",
+    "products": ["Gemini Apps"],
+    "description": "Use puff pastry and an egg custard..."
+  },
+  {
+    "header": "Gemini Apps",
+    "title": "Prompted Tell me a joke",
+    "titleUrl": "https://gemini.google.com/app/def456",
+    "time": "2026-05-14T11:00:00Z",
+    "products": ["Gemini Apps"]
+  },
+  {
+    "header": "Search",
+    "title": "Searched for cat pictures",
+    "time": "2026-05-14T12:00:00Z",
+    "products": ["Search"]
+  }
+]

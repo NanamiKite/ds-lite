@@ -1,0 +1,11 @@
+[
+  {
+    "conversation_id": "c1",
+    "title": "导入测试",
+    "messages": [
+      { "role": "user", "content": "q1" },
+      { "role": "assistant", "content": "a1" },
+      { "role": "system", "content": "should be skipped" }
+    ]
+  }
+]
