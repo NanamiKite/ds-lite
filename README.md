@@ -11,7 +11,7 @@
 **非官方第三方客户端，与 DeepSeek 官方无关联。** 对话能力来自
 [DeepSeek 开放平台](https://platform.deepseek.com)，按量计费。
 
-[快速开始](#快速开始) · [导入历史对话](docs/data.md) · [个性与记忆](docs/memory.md) · [对话机制](docs/context.md) · [参与开发](docs/development.md) · [打包 APK](#打包-apk) · [GitHub](https://github.com/NanamiKite/deepseek-lite)
+[下载 APK](https://github.com/NanamiKite/deepseek-lite/releases) · [快速开始](#快速开始) · [导入历史对话](docs/data.md) · [个性与记忆](docs/memory.md) · [对话机制](docs/context.md) · [参与开发](docs/development.md)
 
 **简体中文**
 
@@ -63,6 +63,11 @@
 
 ## 快速开始
 
+**普通用户**：到 [Releases](https://github.com/NanamiKite/deepseek-lite/releases) 下载最新 APK 安装（首次安装需允许"未知来源/安装未知应用"），打开 App 按三步引导绑定 API Key 即可。
+
+<details>
+<summary><b>从源码运行 / 参与开发</b></summary>
+
 ```bash
 git clone https://github.com/NanamiKite/deepseek-lite.git
 cd deepseek-lite
@@ -70,23 +75,9 @@ pnpm install        # 或 npm install / yarn
 npx expo start
 ```
 
-手机装 [Expo Go](https://expo.dev/go) 扫二维码即可运行。本项目只用 Expo SDK 官方模块，Expo Go 可完整运行。
-
-<details>
-<summary><b>网络与安装细节</b></summary>
-
-手机与电脑需同一 Wi-Fi；跨网络用 `npx expo start --tunnel`。
-国内安卓可从 [expo.dev/tools](https://expo.dev/tools) 直接下载 Expo Go 的 APK。
+手机装 [Expo Go](https://expo.dev/go) 扫二维码即可运行。本项目只用 Expo SDK 官方模块，Expo Go 可完整运行。手机与电脑需同一 Wi-Fi，跨网络用 `npx expo start --tunnel`；国内安卓可从 [expo.dev/tools](https://expo.dev/tools) 下载 Expo Go 的 APK。
 
 </details>
-
-### 五分钟上手
-
-**1. 进引导。** 首次启动自动进入；之后在设置或聊天页顶部提示条随时重进。
-
-**2. 绑 Key。** 三步引导里点「打开注册页面」注册 DeepSeek 账号 →「API Keys」页创建并复制 → 回来粘贴，校验通过即绑定。
-
-**3. 开聊。** 试试同时打开「深度思考」和「联网搜索」问一个时效问题，回答下面会出现引用来源。
 
 ## 打包 APK
 
@@ -95,7 +86,7 @@ npm i -g eas-cli && eas login
 eas build -p android --profile preview
 ```
 
-`eas.json` 内置 `preview`（APK，直接安装）与 `production`（AAB，商店）两套配置。
+`eas.json` 内置 `preview`（APK，直接安装）与 `production`（AAB，商店）两套配置。正式发布走 GitHub Releases。
 
 ## 支持的导入格式
 
