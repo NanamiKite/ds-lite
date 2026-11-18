@@ -9,7 +9,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Clipboard from 'expo-clipboard';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable,
+  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable,
   ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -99,7 +99,11 @@ export default function Onboarding() {
       {step === 'welcome' && (
         <View style={styles.center}>
           <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>DS</Text>
+            <Image
+              source={require('../assets/whale.png')}
+              style={{ width: 54, height: 54 }}
+              resizeMode="contain"
+            />
           </View>
           <Text style={[styles.h1, { color: colors.text }]}>DeepSeek Lite</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>

@@ -5,7 +5,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert, FlatList, KeyboardAvoidingView, Pressable, StyleSheet, Text, View,
+  Alert, FlatList, Image, KeyboardAvoidingView, Pressable, StyleSheet, Text, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -185,7 +185,11 @@ export default function ChatScreen() {
         {empty ? (
           <View style={[styles.welcome, { backgroundColor: colors.background }]}>
             <View style={styles.welcomeBadge}>
-              <Text style={styles.welcomeMark}>DS</Text>
+              <Image
+                source={require('../../assets/whale.png')}
+                style={{ width: 52, height: 52 }}
+                resizeMode="contain"
+              />
             </View>
             <Text style={[styles.welcomeTitle, { color: colors.text }]}>你好，我是 DeepSeek</Text>
             <Text style={[styles.welcomeSubtitle, { color: colors.textSecondary }]}>
