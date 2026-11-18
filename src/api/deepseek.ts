@@ -7,6 +7,7 @@
  * 使用 expo/fetch —— 原生流式实现，支持 ReadableStream 与 AbortSignal。
  */
 import { fetch } from 'expo/fetch';
+import { createSseParser } from './sse';
 import type { ApiChatMessage, SearchResult, Usage } from '@/types';
 
 export const DEEPSEEK_BASE = 'https://api.deepseek.com';
@@ -163,14 +164,10 @@ export async function streamChat(opts: StreamChatOptions): Promise<void> {
 
   const reader = body.getReader();
   const decoder = new TextDecoder('utf-8');
-  let buffer = '';
+  const sse = createSseParser();
   const seenUrls = new Set<string>();
 
-  const handleEvent = (payload: string) => {
-    const line = payload.trim();
-    if (!line || line.startsWith(':')) return;
-    if (!line.startsWith('data:')) return;
-    const dataStr = line.slice(5).trim();
+  const handleEvent = (dataStr: string) => {
     if (dataStr === '[DONE]') return;
     let json: {
       model?: string;
@@ -223,15 +220,11 @@ export async function streamChat(opts: StreamChatOptions): Promise<void> {
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      let idx: number;
-      while ((idx = buffer.indexOf('\n')) >= 0) {
-        const line = buffer.slice(0, idx);
-        buffer = buffer.slice(idx + 1);
-        handleEvent(line);
+      for (const ev of sse.push(decoder.decode(value, { stream: true }))) {
+        handleEvent(ev.data);
       }
     }
-    if (buffer.trim()) handleEvent(buffer);
+    for (const ev of sse.flush()) handleEvent(ev.data);
   } finally {
     try { reader.releaseLock(); } catch { /* ignore */ }
   }

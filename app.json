@@ -15,8 +15,7 @@
     "backgroundColor": "#FFFFFF",
     "newArchEnabled": true,
     "platforms": [
-      "android",
-      "ios"
+      "android"
     ],
     "ios": {
       "supportsTablet": true,

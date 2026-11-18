@@ -7,7 +7,6 @@ import { join } from 'node:path';
 import assert from 'node:assert/strict';
 import { parseExportText } from '../src/import';
 import { toMs } from '../src/import/types';
-
 const dir = join(process.cwd(), 'scripts', 'fixtures');
 const read = (name: string) => readFileSync(join(dir, name), 'utf-8');
 
@@ -138,6 +137,91 @@ test('无法识别的格式应报错', () => {
 });
 
 // ── 汇总 ──────────────────────────────────────────────────────────────
+// ── 健壮性（损坏输入 / 数字时间串 / 真叶节点 / 重复 ID / NDJSON 容错） ───
+test('健壮性：混合数组（null/字符串/数字）不崩溃且跳过计数', () => {
+  const mixed = '[null, "junk", 42, {"id":"s1","title":"ok","messages":[{"message_id":"m0","parent_id":null,"message_role":"USER","content":"hi","created_at":1700000000}]}]';
+  const r = parseExportText(mixed);
+  assert.equal(r.format, 'deepseek-web');
+  assert.equal(r.conversations.length, 1);
+  assert.equal(r.conversations[0].messages[0].content, 'hi');
+  assert.ok(r.stats.skippedRecords >= 3, `应跳过 3 个损坏项，实际 ${r.stats.skippedRecords}`);
+});
+
+test('健壮性：消息数组里混入 null 不崩溃', () => {
+  const raw = '[{"header":"Gemini Apps","title":"Prompted hi","titleUrl":"https://gemini.google.com/app/zz9","time":"2026-05-14T09:00:00Z"}, null, 123]';
+  const r = parseExportText(raw);
+  assert.equal(r.conversations.length, 1);
+});
+
+test('toMs: 纯数字字符串按秒/毫秒解析', () => {
+  assert.equal(toMs('1700000000'), 1700000000000);
+  assert.equal(toMs('1700000000000'), 1700000000000);
+  assert.equal(toMs('0'), null);
+  assert.equal(toMs('abc'), null);
+});
+
+test('deepseek-web: 时间最晚的非叶节点不劫持分支（真叶选择）', () => {
+  const raw = JSON.stringify([{
+    id: 'leaf-test', title: 't', created_at: 1700000000,
+    messages: [
+      { message_id: 'a', parent_id: null, message_role: 'USER', content: 'root', created_at: 1700000001 },
+      { message_id: 'b', parent_id: 'a', message_role: 'ASSISTANT', content: '真实回答', created_at: 1700000002 },
+      // 孤儿节点时间最晚，但没有子节点也不是正确叶子？——它是真叶，会被选中：
+      // 此用例改为：时间最晚者是"被引用的中间节点"，不应被选为叶子
+      { message_id: 'mid', parent_id: 'b', message_role: 'USER', content: '中间', created_at: 1799999999 },
+      { message_id: 'leaf', parent_id: 'mid', message_role: 'ASSISTANT', content: '最终', created_at: 1700000005 },
+    ],
+  }]);
+  const r = parseExportText(raw);
+  const texts = r.conversations[0].messages.map((m) => m.content).join('|');
+  assert.ok(texts.includes('最终'), '应选中真叶 leaf（时间较晚但确是叶子），而非时间最晚的中间节点 mid');
+});
+
+test('deepseek-web: 缺失父节点标注分支不完整', () => {
+  const raw = JSON.stringify([{
+    id: 'orphan', title: 't', created_at: 1700000000,
+    messages: [
+      { message_id: 'x', parent_id: 'ghost', message_role: 'USER', content: '断链', created_at: 1700000001 },
+    ],
+  }]);
+  const r = parseExportText(raw);
+  assert.equal(r.conversations.length, 1);
+  assert.ok(r.stats.note?.includes('分支不完整'), `note 应标注分支不完整：${r.stats.note}`);
+});
+
+test('deepseek-web: 重复消息 ID 不互相覆盖', () => {
+  const raw = JSON.stringify([{
+    id: 'dup', title: 't', created_at: 1700000000,
+    messages: [
+      { message_id: 'same', parent_id: null, message_role: 'USER', content: '第一条', created_at: 1700000001 },
+      { message_id: 'same', parent_id: null, message_role: 'USER', content: '第二条', created_at: 1700000002 },
+    ],
+  }]);
+  const r = parseExportText(raw);
+  const texts = r.conversations[0].messages.map((m) => m.content);
+  assert.ok(texts.includes('第一条') && texts.includes('第二条'), '重复 ID 应两条都可见');
+});
+
+test('generic: 无 ID 时用内容指纹，不同内容不互撞', () => {
+  const a = parseExportText('[{"title":"A","messages":[{"role":"user","content":"苹果"}]}]');
+  const b = parseExportText('[{"title":"B","messages":[{"role":"user","content":"香蕉"}]}]');
+  assert.notEqual(a.conversations[0].sourceId, b.conversations[0].sourceId, '不同内容的指纹幂等键应不同');
+  const a2 = parseExportText('[{"title":"A","messages":[{"role":"user","content":"苹果"}]}]');
+  assert.equal(a.conversations[0].sourceId, a2.conversations[0].sourceId, '同内容指纹稳定');
+});
+
+test('ndjson: 允许少量坏行并在 note 报告', () => {
+  const text = '{"id":"n1","title":"a","turns":[{"role":"user","text":"q"}]}\nnot-json\n{"id":"n2","title":"b","turns":[{"role":"user","text":"w"}]}';
+  const r = parseExportText(text);
+  assert.equal(r.conversations.length, 2);
+  assert.ok(r.stats.note?.includes('1 个坏行'));
+});
+
+test('ndjson: 坏行超限整体失败', () => {
+  const lines = Array.from({ length: 50 }, (_, i) => (i % 2 ? 'garbage' : `{"id":"n${i}","title":"t","turns":[{"role":"user","text":"q"}]}`)).join('\n');
+  assert.throws(() => parseExportText(lines), /无效行过多/);
+});
+
 const failed = results.filter((r) => !r.ok);
 for (const r of results) {
   console.log(`${r.ok ? '✓' : '✗'} ${r.name}${r.note ? ` — ${r.note}` : ''}`);

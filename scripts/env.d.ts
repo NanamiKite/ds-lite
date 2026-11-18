@@ -8,6 +8,7 @@ declare module 'node:path' {
 declare module 'node:assert/strict' {
   const assert: {
     equal(a: unknown, b: unknown, msg?: string): void;
+    notEqual(a: unknown, b: unknown, msg?: string): void;
     ok(v: unknown, msg?: string): void;
     throws(fn: () => void, re: RegExp): void;
     deepEqual(a: unknown, b: unknown, msg?: string): void;

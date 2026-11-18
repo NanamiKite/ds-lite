@@ -98,4 +98,14 @@ function migrate(db: SQLite.SQLiteDatabase): void {
       db.execSync('PRAGMA user_version = 4;');
     });
   }
+
+  if (current < 5) {
+    db.withTransactionSync(() => {
+      db.execSync(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_messages_session_seq
+          ON messages(session_id, seq);
+      `);
+      db.execSync('PRAGMA user_version = 5;');
+    });
+  }
 }

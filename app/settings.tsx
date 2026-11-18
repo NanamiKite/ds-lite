@@ -50,6 +50,13 @@ export default function SettingsScreen() {
       copyToCacheDirectory: true,
     });
     if (res.canceled) return;
+    const asset = res.assets[0];
+    const size = (asset as { size?: number; fileSize?: number }).size
+      ?? (asset as { fileSize?: number }).fileSize;
+    if (size && size > 100 * 1024 * 1024) {
+      Alert.alert('文件过大', '备份文件超过 100MB 上限');
+      return;
+    }
     try {
       const text = await LegacyFS.readAsStringAsync(res.assets[0].uri, {
         encoding: LegacyFS.EncodingType.UTF8,

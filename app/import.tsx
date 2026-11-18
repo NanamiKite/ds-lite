@@ -40,6 +40,13 @@ export default function ImportScreen() {
     });
     if (res.canceled) return;
     const asset = res.assets[0];
+    const size = (asset as { size?: number; fileSize?: number }).size
+      ?? (asset as { fileSize?: number }).fileSize;
+    const MAX_BYTES = 50 * 1024 * 1024;
+    if (size && size > MAX_BYTES) {
+      Alert.alert('文件过大', '超过 50MB 上限，请检查是否选错了文件');
+      return;
+    }
     setLoading(true);
     try {
       const text = await FileSystem.readAsStringAsync(asset.uri, {

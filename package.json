@@ -9,7 +9,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "test:import": "tsc -p scripts/tsconfig.json && node .test-dist/scripts/test-import.js && node .test-dist/scripts/test-memory.js && node .test-dist/scripts/test-assemble.js && node .test-dist/scripts/test-export.js",
+    "test:import": "tsc -p scripts/tsconfig.json && node .test-dist/scripts/test-import.js && node .test-dist/scripts/test-memory.js && node .test-dist/scripts/test-assemble.js && node .test-dist/scripts/test-export.js && node .test-dist/scripts/test-sse.js",
     "demo:prompt": "tsc -p scripts/tsconfig.json && node .test-dist/scripts/demo-prompt.js",
     "fix:deps": "expo install --fix"
   },

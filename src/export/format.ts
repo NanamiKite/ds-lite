@@ -60,7 +60,7 @@ const ROLE_LABEL: Record<string, string> = {
   system: '系统',
 };
 
-export function sessionToMarkdown(s: ExportSession): string {
+export function sessionToMarkdown(s: ExportSession, includeReasoning = false): string {
   const lines: string[] = [];
   const date = (ts: number) => new Date(ts).toLocaleString('zh-CN');
   lines.push(`# ${s.title}`);
@@ -71,7 +71,7 @@ export function sessionToMarkdown(s: ExportSession): string {
     lines.push(`### ${ROLE_LABEL[m.role] ?? m.role} · ${date(m.createdAt)}`);
     lines.push('');
     lines.push(m.content);
-    if (m.reasoning) {
+    if (includeReasoning && m.reasoning) {
       lines.push('');
       lines.push('<details><summary>思维链</summary>');
       lines.push('');
@@ -95,5 +95,5 @@ export function sessionsToMarkdown(sessions: ExportSession[]): string {
     '---',
     '',
   ].join('\n');
-  return header + sessions.map(sessionToMarkdown).join('\n');
+  return header + sessions.map((s) => sessionToMarkdown(s)).join('\n');
 }

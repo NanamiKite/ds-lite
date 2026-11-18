@@ -18,6 +18,16 @@ interface Props {
   onLongPress?: () => void;
 }
 
+/** 仅允许 http/https 外链（模型返回的 URL 可能带任意 scheme） */
+function safeOpenUrl(url: string) {
+  try {
+    const u = new URL(url);
+    if (u.protocol === 'https:' || u.protocol === 'http:') {
+      Linking.openURL(url).catch(() => undefined);
+    }
+  } catch { /* 非法 URL 忽略 */ }
+}
+
 export function MessageBubble({ message, isLive, canRegenerate, onRegenerate, onLongPress }: Props) {
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(false);
@@ -81,7 +91,7 @@ export function MessageBubble({ message, isLive, canRegenerate, onRegenerate, on
         <View style={styles.sources}>
           <Text style={[styles.sourcesTitle, { color: colors.textTertiary }]}>参考来源</Text>
           {message.meta.search.results.slice(0, 5).map((r, i) => (
-            <Pressable key={i} onPress={() => Linking.openURL(r.url).catch(() => undefined)}>
+            <Pressable key={i} onPress={() => safeOpenUrl(r.url)}>
               <Text style={[styles.sourceItem, { color: colors.textSecondary }]} numberOfLines={1}>
                 [{i + 1}] {r.title || r.url}
               </Text>

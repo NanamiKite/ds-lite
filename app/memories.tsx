@@ -85,6 +85,13 @@ export default function MemoriesScreen() {
       copyToCacheDirectory: true,
     });
     if (res.canceled) return;
+    const asset = res.assets[0];
+    const size = (asset as { size?: number; fileSize?: number }).size
+      ?? (asset as { fileSize?: number }).fileSize;
+    if (size && size > 10 * 1024 * 1024) {
+      Alert.alert('文件过大', '记忆文件超过 10MB 上限');
+      return;
+    }
     setBusy(true);
     try {
       const text = await FileSystem.readAsStringAsync(res.assets[0].uri, {
@@ -144,6 +151,11 @@ export default function MemoriesScreen() {
               );
             })}
           </View>
+          {settings.memoryMode === 'auto' && (
+            <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 8 }}>
+              自动提取每轮额外调用一次 API（消耗少量额度，消息内容会发送给模型）
+            </Text>
+          )}
         </View>
 
         <View style={{ flexDirection: 'row', gap: 8 }}>

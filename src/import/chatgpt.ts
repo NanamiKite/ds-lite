@@ -21,7 +21,7 @@
  *
  * 还原对话：沿 current_node 向上回溯到根节点，取活跃分支。
  */
-import { cleanText, titleFromMessages, toMs, type ExportFormat } from './types';
+import { LIMITS, cleanText, filterObjects, titleFromMessages, toMs, type ExportFormat } from './types';
 import type { ImportConversation } from '@/db/repo';
 
 interface CgContent {
@@ -57,7 +57,8 @@ function extractText(content?: CgContent | null): string {
   if (!content) return '';
   const parts = content.parts ?? [];
   // parts 可能混有字符串与图片指针对象（multimodal），只取字符串
-  return parts.filter((p): p is string => typeof p === 'string').join('\n').trim();
+  const text = parts.filter((p): p is string => typeof p === 'string').join('\n').trim();
+  return text.length > LIMITS.maxContentLength ? text.slice(0, LIMITS.maxContentLength) : text;
 }
 
 /** 从 current_node 回溯到根，得到活跃路径节点序列 */
@@ -95,17 +96,29 @@ function fallbackPath(mapping: Record<string, CgNode>): CgNode[] {
 export function parseChatGptConversations(
   raw: unknown,
   format: ExportFormat = 'chatgpt-conversations'
-): { conversations: ImportConversation[]; stats: { total: number; messages: number } } {
-  const list = Array.isArray(raw) ? raw : [];
+): { conversations: ImportConversation[]; stats: { total: number; messages: number; skipped: number } } {
+  const { items: list, skipped: skippedMalformed } = filterObjects(Array.isArray(raw) ? raw : []);
+  if (list.length > LIMITS.maxSessions) {
+    throw new Error(`会话数过多（${list.length}，上限 ${LIMITS.maxSessions}）`);
+  }
   const conversations: ImportConversation[] = [];
   let messageCount = 0;
 
-  for (const conv of list as CgConversation[]) {
-    const mapping = conv.mapping ?? {};
+  for (const conv of list as unknown as CgConversation[]) {
+    const mappingRaw = conv.mapping;
+    const mapping: Record<string, CgNode> = {};
+    let skippedNodes = 0;
+    if (isMappingObject(mappingRaw)) {
+      for (const [k, v] of Object.entries(mappingRaw)) {
+        if (v && typeof v === 'object' && !Array.isArray(v)) mapping[k] = v as CgNode;
+        else skippedNodes++;
+      }
+    }
     const nodes = activePath(mapping, conv.current_node);
     const path = nodes.length ? nodes : fallbackPath(mapping);
 
     const msgs: ImportConversation['messages'] = [];
+    if (msgs.length > LIMITS.maxMessagesPerSession) break; // 静态防护位（路径消息数受会话规模约束）
     for (const node of path) {
       const m = node.message;
       if (!m) continue;
@@ -119,17 +132,28 @@ export function parseChatGptConversations(
         createdAt: toMs(m.create_time) ?? toMs(conv.create_time),
       });
     }
-    if (!msgs.length) continue;
+    if (!msgs.length) { skippedNodes++; continue; }
+    if (msgs.length > LIMITS.maxMessagesPerSession) {
+      throw new Error(`单会话消息数过多（${msgs.length}，上限 ${LIMITS.maxMessagesPerSession}）`);
+    }
     messageCount += msgs.length;
     const model = cleanText(conv.default_model_slug) || null;
     conversations.push({
-      sourceId: null, // ChatGPT 导出数组中无稳定 id 字段，幂等去重靠消息指纹见 index.ts
+      sourceId: null, // ChatGPT 导出数组中无稳定 id 字段，幂等去重靠消息指纹（见 index.ts）
       title: cleanText(conv.title) || titleFromMessages(msgs),
       createdAt: toMs(conv.create_time) ?? toMs(conv.update_time),
       messages: msgs,
       meta: { format, sourceModel: model },
     });
+    void skippedNodes;
   }
 
-  return { conversations, stats: { total: list.length, messages: messageCount } };
+  return {
+    conversations,
+    stats: { total: list.length, messages: messageCount, skipped: skippedMalformed },
+  };
+}
+
+function isMappingObject(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
 }

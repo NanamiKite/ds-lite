@@ -137,7 +137,7 @@ eas build -p android --profile preview
 
 ```bash
 pnpm typecheck     # tsc --noEmit
-pnpm test:import   # 43 个纯逻辑测试（导入 16 / 记忆 16 / 组装 8 / 导出 3）
+pnpm test:import   # 59 个纯逻辑测试（导入 25 / 记忆 16 / 组装 8 / 导出 3 / SSE 7）
 pnpm demo:prompt   # 打印实际注入的 system prompt
 ```
 

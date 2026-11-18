@@ -11,7 +11,7 @@
  * 2. Conversations 对象：{conversations:[{title, create_time, entries|messages|turns:
  *    [{role|author, text|content}]}]} —— 完整多轮（Takeout/scraper ndjson）。
  */
-import { cleanText, titleFromMessages, toMs } from './types';
+import { LIMITS, cleanText, filterObjects, titleFromMessages, toMs } from './types';
 import type { ImportConversation } from '@/db/repo';
 
 const APP_ID_RE = /\/app\/([0-9a-fA-F]+)/;
@@ -71,19 +71,19 @@ function extractResponse(r: ActivityRecord): string {
 
 export function parseGeminiActivity(raw: unknown): {
   conversations: ImportConversation[];
-  stats: { records: number; kept: number; skippedNonGemini: number; withoutResponse: number; messages: number };
+  stats: { records: number; kept: number; skippedNonGemini: number; skippedMalformed: number; withoutResponse: number; messages: number };
 } {
-  const records = Array.isArray(raw) ? (raw as ActivityRecord[]) : [];
+  const { items: records, skipped: skippedMalformed } = filterObjects(Array.isArray(raw) ? raw : []);
   const groups = new Map<string, ActivityRecord[]>();
   let kept = 0;
   let skipped = 0;
   let order = 0;
 
-  for (const r of records) {
+  for (const r of records as ActivityRecord[]) {
     const header = cleanText(r.header).toLowerCase();
     if (header && !GEMINI_HEADERS.has(header)) { skipped++; continue; }
     kept++;
-    const m = APP_ID_RE.exec(r.titleUrl ?? '');
+    const m = APP_ID_RE.exec(typeof r.titleUrl === 'string' ? r.titleUrl : '');
     const cid = m ? m[1] : `activity-${order++}`;
     const bucket = groups.get(cid);
     if (bucket) bucket.push(r);
@@ -104,12 +104,12 @@ export function parseGeminiActivity(raw: unknown): {
     for (const r of recs) {
       const prompt = cleanText(r.title).replace(PROMPTED_PREFIX_RE, '').trim();
       if (prompt) {
-        msgs.push({ role: 'user', content: prompt, createdAt: toMs(r.time) });
+        msgs.push({ role: 'user', content: prompt.slice(0, LIMITS.maxContentLength), createdAt: toMs(r.time) });
         firstPrompt = firstPrompt || prompt;
       }
       const response = extractResponse(r);
       if (response) {
-        msgs.push({ role: 'assistant', content: response, createdAt: toMs(r.time) });
+        msgs.push({ role: 'assistant', content: response.slice(0, LIMITS.maxContentLength), createdAt: toMs(r.time) });
         hasResponse = true;
       }
     }
@@ -130,31 +130,36 @@ export function parseGeminiActivity(raw: unknown): {
 
   return {
     conversations,
-    stats: { records: records.length, kept, skippedNonGemini: skipped, withoutResponse, messages: messageCount },
+    stats: { records: records.length, kept, skippedNonGemini: skipped, skippedMalformed, withoutResponse, messages: messageCount },
   };
 }
 
 export function parseGeminiConversations(raw: unknown): {
   conversations: ImportConversation[];
-  stats: { total: number; withoutResponse: number; messages: number };
+  stats: { total: number; skippedMalformed: number; withoutResponse: number; messages: number };
 } {
-  const list = Array.isArray(raw)
+  const listRaw = Array.isArray(raw)
     ? raw
     : raw && typeof raw === 'object' && Array.isArray((raw as { conversations?: unknown[] }).conversations)
       ? ((raw as { conversations: unknown[] }).conversations)
       : [];
+  const { items: list, skipped: skippedMalformed } = filterObjects(listRaw);
   const conversations: ImportConversation[] = [];
   let withoutResponse = 0;
   let messageCount = 0;
 
   (list as ConvFormConversation[]).forEach((c, idx) => {
-    const entries = c.entries ?? c.messages ?? c.turns ?? [];
+    const entriesRaw = Array.isArray(c.entries) ? c.entries
+      : Array.isArray(c.messages) ? c.messages
+      : Array.isArray(c.turns) ? c.turns
+      : [];
+    const { items: entries } = filterObjects(entriesRaw as unknown[]);
     const msgs: ImportConversation['messages'] = [];
-    for (const e of entries) {
-      const role = normRole(e.role ?? e.author);
+    for (const e of entries as TurnEntry[]) {
+      const role = normRole(typeof e.role === 'string' ? e.role : typeof e.author === 'string' ? e.author : undefined);
       const text = cleanText(e.text ?? e.content);
       if (!text) continue;
-      msgs.push({ role, content: text });
+      msgs.push({ role, content: text.slice(0, LIMITS.maxContentLength) });
     }
     if (!msgs.length) return;
     if (!msgs.some((m) => m.role === 'assistant' && m.content.trim())) withoutResponse++;
@@ -168,5 +173,5 @@ export function parseGeminiConversations(raw: unknown): {
     });
   });
 
-  return { conversations, stats: { total: list.length, withoutResponse, messages: messageCount } };
+  return { conversations, stats: { total: list.length, skippedMalformed, withoutResponse, messages: messageCount } };
 }

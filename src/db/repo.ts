@@ -43,6 +43,16 @@ interface MessageRow {
   seq: number;
 }
 
+/** 安全 JSON 解析：损坏数据返回 null 而非抛异常（单条损坏不应拖垮整个列表） */
+function safeJson<T>(value: string | null | undefined): T | null {
+  if (!value) return null;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+}
+
 function rowToSession(r: SessionRow): Session {
   return {
     id: r.id,
@@ -53,7 +63,7 @@ function rowToSession(r: SessionRow): Session {
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     pinned: !!r.pinned,
-    importedMeta: r.imported_meta ? (JSON.parse(r.imported_meta) as ImportedMeta) : null,
+    importedMeta: safeJson<ImportedMeta>(r.imported_meta),
     summary: r.summary,
     summarySeq: r.summary_seq,
     digest: r.digest,
@@ -73,7 +83,7 @@ function rowToMessage(r: MessageRow): ChatMessage {
     status: r.status as MessageStatus,
     error: r.error,
     seq: r.seq,
-    meta: r.meta ? (JSON.parse(r.meta) as MessageMeta) : null,
+    meta: safeJson<MessageMeta>(r.meta),
   };
 }
 
@@ -194,11 +204,6 @@ export function appendMessage(
   }
 ): ChatMessage {
   const db = getDb();
-  const max = db.getFirstSync<{ m: number }>(
-    'SELECT MAX(seq) AS m FROM messages WHERE session_id = ?',
-    [sessionId]
-  );
-  const seq = (max?.m ?? 0) + 1;
   const msg: ChatMessage = {
     id: uuid(),
     sessionId,
@@ -208,25 +213,37 @@ export function appendMessage(
     createdAt: Date.now(),
     status: m.status ?? 'done',
     error: m.error ?? null,
-    seq,
+    seq: 0,
     meta: m.meta ?? null,
   };
-  db.runSync(
-    `INSERT INTO messages (id, session_id, role, content, reasoning, created_at, status, error, meta, seq)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      msg.id,
-      msg.sessionId,
-      msg.role,
-      msg.content,
-      msg.reasoning,
-      msg.createdAt,
-      msg.status,
-      msg.error,
-      msg.meta ? JSON.stringify(msg.meta) : null,
-      msg.seq,
-    ]
-  );
+  // 事务内取 MAX(seq)+1 并插入；UNIQUE(session_id, seq) 兜底并发冲突
+  db.withTransactionSync(() => {
+    const max = db.getFirstSync<{ m: number }>(
+      'SELECT MAX(seq) AS m FROM messages WHERE session_id = ?',
+      [sessionId]
+    );
+    let seq = (max?.m ?? 0) + 1;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        db.runSync(
+          `INSERT INTO messages (id, session_id, role, content, reasoning, created_at, status, error, meta, seq)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            msg.id, msg.sessionId, msg.role, msg.content, msg.reasoning,
+            msg.createdAt, msg.status, msg.error,
+            msg.meta ? JSON.stringify(msg.meta) : null, seq,
+          ]
+        );
+        msg.seq = seq;
+        return msg;
+      } catch (e) {
+        // 唯一约束冲突：seq 被并发占用，递增重试
+        if (String(e).includes('UNIQUE')) { seq++; continue; }
+        throw e;
+      }
+    }
+    throw new Error('消息序号冲突重试次数用尽');
+  });
   return msg;
 }
 

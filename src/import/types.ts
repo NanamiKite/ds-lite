@@ -30,7 +30,7 @@ export interface ParsedExport {
   stats: ImportStats;
 }
 
-/** 任意时间戳 → epoch ms；数值按 秒/毫秒 自适应，字符串尝试 ISO 解析 */
+/** 任意时间戳 → epoch ms；数值与纯数字字符串按 秒/毫秒 自适应，字符串尝试 ISO 解析 */
 export function toMs(v: unknown): number | null {
   if (v == null) return null;
   if (typeof v === 'number' && isFinite(v)) {
@@ -38,11 +38,42 @@ export function toMs(v: unknown): number | null {
     return v < 1e12 ? Math.round(v * 1000) : Math.round(v);
   }
   if (typeof v === 'string') {
-    const t = Date.parse(v);
+    const s = v.trim();
+    if (s && /^[+-]?\d+(\.\d+)?$/.test(s)) {
+      const n = Number(s);
+      if (!isFinite(n) || n <= 0) return null;
+      return n < 1e12 ? Math.round(n * 1000) : Math.round(n);
+    }
+    const t = Date.parse(s);
     return isFinite(t) ? t : null;
   }
   return null;
 }
+
+export function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+/** 过滤出普通对象并返回被跳过的数量（损坏导出文件里可能混有 null/字符串/数字） */
+export function filterObjects(arr: unknown[]): { items: Record<string, unknown>[]; skipped: number } {
+  const items: Record<string, unknown>[] = [];
+  let skipped = 0;
+  for (const x of arr) {
+    if (isPlainObject(x)) items.push(x);
+    else skipped++;
+  }
+  return { items, skipped };
+}
+
+/** 导入上限：防超大/恶意文件拖垮移动端 */
+export const LIMITS = {
+  maxSessions: 2000,
+  maxMessagesPerSession: 20000,
+  maxContentLength: 200_000,        // 单条消息字符上限（超出截断）
+  maxFragments: 500,                // contentFragments 数量上限
+  ndjsonMaxLines: 50_000,
+  ndjsonMaxBadLines: 20,            // 允许的坏行数（超过则整体失败）
+} as const;
 
 export function cleanText(s: unknown): string {
   return typeof s === 'string' ? s.replace(/\u00a0/g, ' ').trim() : '';

@@ -51,7 +51,18 @@ pnpm demo:prompt   # 打印个性+记忆组装后的 system prompt 示例
 npx expo start     # 开发
 ```
 
-测试用例数：导入解析 16、记忆逻辑 16、上下文组装 8、导出格式 3。
+测试用例数：导入解析 25（含损坏输入/坏行容错/真叶分支）、记忆逻辑 16、上下文组装 8、导出格式 3、SSE 流解析 7。
+
+## 导入健壮性
+
+解析器对外部文件按不可信输入处理：
+
+- 数组先过对象守卫（`filterObjects`），null/字符串/数字项跳过并计入统计
+- 上限：会话 2000、单会话消息 20000、单条消息 20 万字符、NDJSON 5 万行（坏行容忍 20 行）
+- UI 侧按字节预检（导入 50MB / 记忆 10MB / 备份 100MB）
+- 所有解析异常统一转换为 `ImportError`，不向 UI 裸抛 TypeError
+- DeepSeek 分支按"真叶节点 + 时间最晚"还原，缺父节点时标注"分支不完整"
+- 无稳定 ID 的记录用内容指纹做幂等键（不用数组下标）
 
 ## 数据库迁移
 
@@ -63,6 +74,7 @@ npx expo start     # 开发
 | 2 | memories 表 |
 | 3 | sessions 增加 summary / summary_seq（上下文滚动摘要） |
 | 4 | sessions 增加 digest / digest_seq（会话摘要）与 memory_enabled（对话级记忆开关） |
+| 5 | messages 增加 UNIQUE(session_id, seq)，追加在事务内取号并冲突重试 |
 
 ## 打包
 
