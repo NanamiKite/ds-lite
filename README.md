@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🐋 DeepSeek Lite
+<img src="assets/icon.png" alt="DeepSeek Lite" width="96">
+
+# DeepSeek Lite
 
 **原生手感的 DeepSeek 手机客户端 —— Key 是你的，数据在你手里。**
 

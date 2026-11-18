@@ -129,14 +129,12 @@ export default function ChatScreen() {
         {
           key: 'copy',
           label: '复制全文',
-          icon: '⧉',
           onPress: () => { Clipboard.setStringAsync(msgSheet.content).catch(() => undefined); },
         },
         ...(msgSheet.role === 'assistant' && msgSheet.id === lastAssistantId && !busy
           ? [{
               key: 'regen',
               label: '重新生成',
-              icon: '↻',
               onPress: () => regenerate(sessionId, { thinking, search }),
             }]
           : []),
@@ -187,7 +185,7 @@ export default function ChatScreen() {
         {empty ? (
           <View style={[styles.welcome, { backgroundColor: colors.background }]}>
             <View style={styles.welcomeBadge}>
-              <Text style={styles.welcomeWhale}>🐋</Text>
+              <Text style={styles.welcomeMark}>DS</Text>
             </View>
             <Text style={[styles.welcomeTitle, { color: colors.text }]}>你好，我是 DeepSeek</Text>
             <Text style={[styles.welcomeSubtitle, { color: colors.textSecondary }]}>
@@ -235,7 +233,7 @@ export default function ChatScreen() {
         {queueCount > 0 && (
           <View style={styles.queueBar}>
             <Text style={{ color: colors.textTertiary, fontSize: 12.5 }}>
-              ⏳ {queueCount} 条排队中，当前回复结束后自动发送（点停止可取消）
+              {queueCount} 条排队中，当前回复结束后自动发送（点停止可取消）
             </Text>
           </View>
         )}
@@ -246,7 +244,7 @@ export default function ChatScreen() {
             onPress={() => { clearMemoryToast(); router.push('/memories'); }}
           >
             <Text style={{ color: colors.reasoningText, fontSize: 12.5, lineHeight: 17 }} numberOfLines={3}>
-              💡 已记住：{memoryToast.items.join('；')}（点击管理）
+              已记住：{memoryToast.items.join('；')}（点击管理）
             </Text>
           </Pressable>
         )}
@@ -300,7 +298,7 @@ const styles = StyleSheet.create({
     width: 84, height: 84, borderRadius: 24, backgroundColor: DS_BLUE,
     alignItems: 'center', justifyContent: 'center', marginBottom: 18,
   },
-  welcomeWhale: { fontSize: 40 },
+  welcomeMark: { color: '#fff', fontSize: 30, fontWeight: '800' },
   welcomeTitle: { fontSize: 21, fontWeight: '700', marginBottom: 10 },
   welcomeSubtitle: { fontSize: 14, lineHeight: 21, textAlign: 'center', marginBottom: 28 },
   welcomeCta: { borderRadius: 24, paddingHorizontal: 26, paddingVertical: 13, marginBottom: 24 },

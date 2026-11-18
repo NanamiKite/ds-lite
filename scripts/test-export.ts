@@ -44,8 +44,8 @@ test('单会话 Markdown：标题/摘要/角色标签/思维链折叠', () => {
   const md = sessionToMarkdown(s('1', '里斯本'));
   assert.ok(md.startsWith('# 里斯本'));
   assert.ok(md.includes('摘要：讨论了里斯本旅行计划'));
-  assert.ok(md.includes('🧑 我'));
-  assert.ok(md.includes('🐋 DeepSeek'));
+  assert.ok(md.includes('### 我 ·'));
+  assert.ok(md.includes('### DeepSeek ·'));
   assert.ok(md.includes('第一天：阿尔法玛老城区'));
   assert.ok(md.includes('<details><summary>思维链</summary>'));
 });

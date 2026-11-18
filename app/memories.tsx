@@ -47,7 +47,6 @@ export default function MemoriesScreen() {
           {
             key: 'confirm-del',
             label: '确认删除这条记忆',
-            icon: '🗑',
             danger: true,
             onPress: () => { deleteMemory(sheetMemory.id); reload(); },
           },
@@ -56,19 +55,16 @@ export default function MemoriesScreen() {
           {
             key: 'toggle',
             label: sheetMemory.active ? '停用（不注入对话）' : '启用',
-            icon: sheetMemory.active ? '⏸' : '▶',
             onPress: () => { updateMemory(sheetMemory.id, { active: !sheetMemory.active }); reload(); },
           },
           {
             key: 'edit',
             label: '编辑',
-            icon: '✎',
             onPress: () => { setEditing(sheetMemory); setEditText(sheetMemory.content); },
           },
           {
             key: 'del',
             label: '删除',
-            icon: '🗑',
             danger: true,
             keepOpen: true,
             onPress: () => setConfirmDelete(true),
@@ -152,10 +148,10 @@ export default function MemoriesScreen() {
 
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <Pressable style={[styles.btn, { borderColor: DS_BLUE }]} onPress={importFile} disabled={busy}>
-            <Text style={{ color: DS_BLUE, fontSize: 13.5, fontWeight: '600' }}>{busy ? '读取中…' : '📁 从文件导入'}</Text>
+            <Text style={{ color: DS_BLUE, fontSize: 13.5, fontWeight: '600' }}>{busy ? '读取中…' : '从文件导入'}</Text>
           </Pressable>
           <Pressable style={[styles.btn, { borderColor: colors.border }]} onPress={() => setPasteOpen(true)}>
-            <Text style={{ color: colors.textSecondary, fontSize: 13.5, fontWeight: '600' }}>📋 粘贴导入</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 13.5, fontWeight: '600' }}>粘贴导入</Text>
           </Pressable>
         </View>
 
@@ -184,7 +180,6 @@ export default function MemoriesScreen() {
           keyExtractor={(m) => m.id}
           ListEmptyComponent={
             <View style={{ alignItems: 'center', paddingVertical: 30 }}>
-              <Text style={{ fontSize: 32, marginBottom: 8 }}>🧠</Text>
               <Text style={{ color: colors.textSecondary, fontSize: 14 }}>暂无记忆</Text>
             </View>
           }

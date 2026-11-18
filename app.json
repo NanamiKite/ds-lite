@@ -5,7 +5,13 @@
     "version": "0.1.0",
     "scheme": "deepseeklite",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4D6BFE"
+    },
     "backgroundColor": "#FFFFFF",
     "newArchEnabled": true,
     "platforms": [
@@ -20,6 +26,7 @@
       "package": "com.dslite.app",
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
+        "foreground": "./assets/adaptive-icon.png",
         "backgroundColor": "#4D6BFE"
       }
     },

@@ -33,28 +33,10 @@ export function ChatInput({
   return (
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       <View style={[styles.pillRow]}>
-        <Pill
-          colors={colors}
-          active={thinking}
-          label="深度思考"
-          icon="✦"
-          onPress={onToggleThinking}
-        />
-        <Pill
-          colors={colors}
-          active={search}
-          label="联网搜索"
-          icon="⌕"
-          onPress={onToggleSearch}
-        />
+        <Pill colors={colors} active={thinking} label="深度思考" onPress={onToggleThinking} />
+        <Pill colors={colors} active={search} label="联网搜索" onPress={onToggleSearch} />
         {!!onToggleMemory && (
-          <Pill
-            colors={colors}
-            active={memoryOn !== false}
-            label="记忆"
-            icon="◉"
-            onPress={onToggleMemory}
-          />
+          <Pill colors={colors} active={memoryOn !== false} label="记忆" onPress={onToggleMemory} />
         )}
       </View>
       <View style={[styles.inputRow]}>
@@ -92,12 +74,11 @@ export function ChatInput({
 }
 
 function Pill({
-  colors, active, label, icon, onPress,
+  colors, active, label, onPress,
 }: {
   colors: ReturnType<typeof useTheme>['colors'];
   active: boolean;
   label: string;
-  icon: string;
   onPress: () => void;
 }) {
   return (
@@ -109,7 +90,6 @@ function Pill({
       onPress={onPress}
       hitSlop={4}
       >
-      <Text style={{ color: active ? colors.primary : colors.text, fontSize: 13.5, marginRight: 5 }}>{icon}</Text>
       <Text style={{ color: active ? colors.pillActiveText : colors.pillText, fontSize: 13.5, fontWeight: '500' }}>
         {label}
       </Text>

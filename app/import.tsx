@@ -108,7 +108,7 @@ export default function ImportScreen() {
               <ActivityIndicator color={DS_BLUE} />
             ) : (
               <Text style={{ color: DS_BLUE, fontSize: 15, fontWeight: '600' }}>
-                📄 选择 JSON 文件
+                选择 JSON 文件
               </Text>
             )}
           </Pressable>

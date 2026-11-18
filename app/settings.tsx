@@ -117,9 +117,9 @@ export default function SettingsScreen() {
             <Action colors={colors} label="解绑" danger onPress={unbind} disabled={!settings.apiKeyBound} />
           </Actions>
           <Actions>
-            <Action colors={colors} label="💰 充值" onPress={() => openUrl('https://platform.deepseek.com/top_up')} />
-            <Action colors={colors} label="🔑 API Keys" onPress={() => openUrl('https://platform.deepseek.com/api_keys')} />
-            <Action colors={colors} label="🏠 开放平台" onPress={() => openUrl('https://platform.deepseek.com')} />
+            <Action colors={colors} label="充值" onPress={() => openUrl('https://platform.deepseek.com/top_up')} />
+            <Action colors={colors} label="API Keys" onPress={() => openUrl('https://platform.deepseek.com/api_keys')} />
+            <Action colors={colors} label="开放平台" onPress={() => openUrl('https://platform.deepseek.com')} />
           </Actions>
         </Group>
 
@@ -242,7 +242,7 @@ export default function SettingsScreen() {
         title="解绑 API Key"
         subtitle="解绑后将无法发送新消息，历史对话保留"
         actions={[
-          { key: 'unbind', label: '确认解绑', icon: '⚡', danger: true, onPress: doUnbind },
+          { key: 'unbind', label: '确认解绑', danger: true, onPress: doUnbind },
         ]}
       />
     </View>

@@ -55,9 +55,9 @@ export function isBackupJson(v: unknown): v is BackupPayload {
 }
 
 const ROLE_LABEL: Record<string, string> = {
-  user: '🧑 我',
-  assistant: '🐋 DeepSeek',
-  system: '⚙ 系统',
+  user: '我',
+  assistant: 'DeepSeek',
+  system: '系统',
 };
 
 export function sessionToMarkdown(s: ExportSession): string {

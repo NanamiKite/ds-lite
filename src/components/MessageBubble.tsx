@@ -92,7 +92,7 @@ export function MessageBubble({ message, isLive, canRegenerate, onRegenerate, on
 
       {message.status === 'error' && !!message.error && (
         <View style={styles.errorRow}>
-          <Text style={[styles.errorText, { color: colors.danger }]}>⚠ {message.error}</Text>
+          <Text style={[styles.errorText, { color: colors.danger }]}>{message.error}</Text>
           {message.error.includes('余额不足') && (
             <Pressable
               onPress={() =>

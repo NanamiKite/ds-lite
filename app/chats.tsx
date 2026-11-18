@@ -80,7 +80,6 @@ export default function ChatsScreen() {
           {
             key: 'confirm-del',
             label: `删除「${sheetSession.title.slice(0, 16)}」，不可恢复`,
-            icon: '🗑',
             danger: true,
             onPress: () => { deleteSession(sheetSession.id); reload(); },
           },
@@ -89,25 +88,21 @@ export default function ChatsScreen() {
           {
             key: 'pin',
             label: sheetSession.pinned ? '取消置顶' : '置顶',
-            icon: '📌',
             onPress: () => { togglePin(sheetSession.id); reload(); },
           },
           {
             key: 'rename',
             label: '重命名',
-            icon: '✎',
             onPress: () => { setRenaming(sheetSession); setRenameText(sheetSession.title); },
           },
           {
             key: 'export',
             label: '导出对话（Markdown）',
-            icon: '⇪',
             onPress: () => { shareSessionMarkdown(sheetSession.id).catch(() => undefined); },
           },
           {
             key: 'del',
             label: '删除对话',
-            icon: '🗑',
             danger: true,
             keepOpen: true,
             onPress: () => setConfirmDelete(true),
@@ -138,24 +133,18 @@ export default function ChatsScreen() {
   const swipeActions = (s: Session) => (
     <View style={styles.swipeRow}>
       <SwipeBtn
-        colors={colors}
-        icon={s.pinned ? '📌×' : '📌'}
-        label={s.pinned ? '取消' : '置顶'}
+        label={s.pinned ? '取消置顶' : '置顶'}
         bg={colors.surfaceAlt}
         fg={colors.textSecondary}
         onPress={() => { togglePin(s.id); reload(); }}
       />
       <SwipeBtn
-        colors={colors}
-        icon="⇪"
         label="导出"
         bg={colors.surfaceAlt}
         fg={colors.primary}
         onPress={() => { shareSessionMarkdown(s.id).catch(() => undefined); }}
       />
       <SwipeBtn
-        colors={colors}
-        icon="🗑"
         label="删除"
         bg="#FDE8E8"
         fg={colors.danger}
@@ -175,7 +164,7 @@ export default function ChatsScreen() {
         </Pressable>
         <View style={{ width: 10 }} />
         <Pressable style={styles.headerBtn} onPress={() => router.push('/settings')}>
-          <Text style={{ color: colors.textSecondary, fontSize: 15 }}>⚙</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 15 }}>设置</Text>
         </Pressable>
       </View>
 
@@ -200,7 +189,6 @@ export default function ChatsScreen() {
         contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={{ fontSize: 40, marginBottom: 12 }}>💬</Text>
             <Text style={{ color: colors.textSecondary, fontSize: 15 }}>还没有对话，点下方按钮开始</Text>
             <Pressable
               style={[styles.newBtn, { backgroundColor: colors.primary }]}
@@ -273,20 +261,16 @@ export default function ChatsScreen() {
 }
 
 function SwipeBtn({
-  colors, icon, label, bg, fg, onPress,
+  label, bg, fg, onPress,
 }: {
-  colors: ReturnType<typeof useTheme>['colors'];
-  icon: string;
   label: string;
   bg: string;
   fg: string;
   onPress: () => void;
 }) {
-  void colors;
   return (
     <Pressable style={[styles.swipeBtn, { backgroundColor: bg }]} onPress={onPress}>
-      <Text style={{ color: fg, fontSize: 15 }}>{icon}</Text>
-      <Text style={{ color: fg, fontSize: 11.5, marginTop: 2 }}>{label}</Text>
+      <Text style={{ color: fg, fontSize: 12.5, fontWeight: '500' }}>{label}</Text>
     </Pressable>
   );
 }
