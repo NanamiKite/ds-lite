@@ -59,6 +59,8 @@ interface ChatStore {
   abortController: AbortController | null;
   /** 自动记忆提取结果提示（聊天页 toast 用） */
   memoryToast: { items: string[]; at: number } | null;
+  /** 等待续发的排队消息数 */
+  queueCount: number;
 
   send(sessionId: string, text: string, opts: SendOptions): Promise<void>;
   regenerate(sessionId: string, opts: SendOptions): Promise<void>;
@@ -129,8 +131,16 @@ function clampHistoryForSummary(items: HistoryItem[]): HistoryItem[] {
 }
 
 export const useChatStore = create<ChatStore>()((set, get) => {
+  /** 发送队列：回复进行中收到的新消息，当前回复结束后自动续发（stop/出错时清空） */
+  const pendingQueue: Array<{ sessionId: string; text: string; opts: SendOptions }> = [];
+
   async function runCompletion(sessionId: string, opts: SendOptions): Promise<void> {
     const key = await getApiKey();
+    let outcome: 'done' | 'error' | 'stopped' = 'error';
+
+    const finishAll = () => {
+      set({ live: null, abortController: null, busySession: null, tick: get().tick + 1 });
+    };
 
     if (!key) {
       const msg = appendMessage(sessionId, {
@@ -139,7 +149,9 @@ export const useChatStore = create<ChatStore>()((set, get) => {
         status: 'error',
         error: '尚未绑定 API Key，请到「设置」绑定后再试',
       });
+      pendingQueue.length = 0;
       set({
+        queueCount: 0,
         busySession: null,
         live: { sessionId, messageId: msg.id, content: '', reasoning: '', status: 'error', model: MODEL_FLASH, error: msg.error ?? undefined },
       });
@@ -225,7 +237,8 @@ export const useChatStore = create<ChatStore>()((set, get) => {
         error: null,
         meta: meta(),
       });
-      set({ live: null, abortController: null, busySession: null, tick: get().tick + 1 });
+      outcome = 'done';
+      finishAll();
       // 后台任务：自动记忆提取 + 滚动摘要压缩 + 会话摘要更新（不阻塞界面）
       void maybeExtractMemories(sessionId, ctx.apiMessages, content, key);
       void maybeSummarize(sessionId, key, ctx);
@@ -237,6 +250,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
         : e instanceof DeepSeekError
           ? e.message
           : `请求失败：${e instanceof Error ? e.message : String(e)}`;
+      outcome = aborted ? 'stopped' : 'error';
       live = { ...live, status: aborted ? 'stopped' : 'error', error: msg };
       updateMessage(message.id, {
         content,
@@ -244,7 +258,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
         status: aborted ? 'stopped' : 'error',
         error: msg,
       });
-      set({ live, abortController: null, busySession: null, tick: get().tick + 1 });
+      finishAll();
     } finally {
       if (timer) clearTimeout(timer);
       // 官方标题未返回时兜底：用首条用户消息命名
@@ -253,7 +267,23 @@ export const useChatStore = create<ChatStore>()((set, get) => {
         if (lastUser) renameSession(sessionId, lastUser.content.replace(/\s+/g, ' ').slice(0, 40));
       }
       touchSession(sessionId, MODEL_FLASH);
+      // 队列续发：正常完成 → 发下一条；停止/出错 → 清空队列（消息保留在历史，可手动重发）
+      if (outcome === 'done') void drainQueue();
+      else {
+        pendingQueue.length = 0;
+        set({ queueCount: 0 });
+      }
     }
+  }
+
+  /** 队列续发 */
+  async function drainQueue(): Promise<void> {
+    if (get().busySession) return;
+    const next = pendingQueue.shift();
+    set({ queueCount: pendingQueue.length });
+    if (!next) return;
+    set({ busySession: next.sessionId });
+    await runCompletion(next.sessionId, next.opts);
   }
 
   let extracting = false;
@@ -353,15 +383,24 @@ export const useChatStore = create<ChatStore>()((set, get) => {
     busySession: null,
     abortController: null,
     memoryToast: null,
+    queueCount: 0,
 
     send: async (sessionId, text, opts) => {
-      if (get().busySession) return;
       const trimmed = text.trim();
       if (!trimmed) return;
-      set({ busySession: sessionId });
 
+      // 用户消息立即插入并刷新界面（不等模型）
       appendMessage(sessionId, { role: 'user', content: trimmed });
+      set({ tick: get().tick + 1 });
       touchSession(sessionId);
+
+      // 正在回复 → 入队，当前回复结束后自动续发
+      if (get().busySession) {
+        pendingQueue.push({ sessionId, text: trimmed, opts });
+        set({ queueCount: pendingQueue.length });
+        return;
+      }
+      set({ busySession: sessionId });
       await runCompletion(sessionId, opts);
     },
 
@@ -378,6 +417,9 @@ export const useChatStore = create<ChatStore>()((set, get) => {
 
     stop: () => {
       const { abortController, live } = get();
+      // 中止当前回复，同时取消排队中的消息（消息保留在历史，可再发）
+      pendingQueue.length = 0;
+      set({ queueCount: 0 });
       abortController?.abort();
       if (live) set({ live: { ...live, status: 'stopped' } });
     },

@@ -46,6 +46,7 @@ export default function ChatScreen() {
   const busySession = useChatStore((s) => s.busySession);
   const memoryToast = useChatStore((s) => s.memoryToast);
   const clearMemoryToast = useChatStore((s) => s.clearMemoryToast);
+  const queueCount = useChatStore((s) => s.queueCount);
   const send = useChatStore((s) => s.send);
   const regenerate = useChatStore((s) => s.regenerate);
   const stop = useChatStore((s) => s.stop);
@@ -231,6 +232,14 @@ export default function ChatScreen() {
           />
         )}
 
+        {queueCount > 0 && (
+          <View style={styles.queueBar}>
+            <Text style={{ color: colors.textTertiary, fontSize: 12.5 }}>
+              ⏳ {queueCount} 条排队中，当前回复结束后自动发送（点停止可取消）
+            </Text>
+          </View>
+        )}
+
         {!!memoryToast && (
           <Pressable
             style={[styles.memoryToast, { backgroundColor: colors.reasoningBg }]}
@@ -301,4 +310,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 9,
   },
   memoryToast: { marginHorizontal: 12, marginBottom: 6, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  queueBar: { marginHorizontal: 12, marginBottom: 6, paddingLeft: 4 },
 });
