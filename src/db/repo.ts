@@ -357,3 +357,79 @@ export function dbStats(): { sessions: number; messages: number } {
   const m = db.getFirstSync<{ c: number }>('SELECT COUNT(*) AS c FROM messages');
   return { sessions: s?.c ?? 0, messages: m?.c ?? 0 };
 }
+
+/** 跨对话参考：近期其他对话的摘要（排除本对话与对话级关闭记忆的） */
+export function listRecentDigests(
+  excludeSessionId: string,
+  limit = 5
+): Array<{ id: string; title: string; digest: string; updatedAt: number }> {
+  const rows = getDb().getAllSync<SessionRow>(
+    `SELECT * FROM sessions
+     WHERE id != ? AND digest IS NOT NULL AND digest != ''
+       AND (memory_enabled IS NULL OR memory_enabled = 1)
+     ORDER BY updated_at DESC LIMIT ?`,
+    [excludeSessionId, limit]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    digest: r.digest ?? '',
+    updatedAt: r.updated_at,
+  }));
+}
+
+/** 导出全部数据（会话+消息） */
+export function exportAllSessions(): Array<{
+  id: string; title: string; source: string; createdAt: number; updatedAt: number;
+  digest?: string | null; messages: Array<{ role: string; content: string; reasoning: string | null; createdAt: number; status: string }>;
+}> {
+  const db = getDb();
+  const sessions = db.getAllSync<SessionRow>('SELECT * FROM sessions ORDER BY updated_at ASC').map(rowToSession);
+  return sessions.map((s) => ({
+    id: s.id,
+    title: s.title,
+    source: s.source,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+    digest: s.digest ?? null,
+    messages: listMessages(s.id).map((m) => ({
+      role: m.role,
+      content: m.content,
+      reasoning: m.reasoning,
+      createdAt: m.createdAt,
+      status: m.status,
+    })),
+  }));
+}
+
+/** 从备份恢复（幂等：按会话 id 跳过已存在） */
+export function importBackup(sessions: Array<{
+  id: string; title: string; source?: string; createdAt?: number; updatedAt?: number;
+  digest?: string | null; messages: Array<{ role: string; content: string; createdAt?: number }>;
+}>): { imported: number; skipped: number } {
+  const db = getDb();
+  const result = { imported: 0, skipped: 0 };
+  for (const s of sessions) {
+    const exists = db.getFirstSync<{ id: string }>('SELECT id FROM sessions WHERE id = ?', [s.id]);
+    if (exists) { result.skipped++; continue; }
+    const now = Date.now();
+    const base = s.createdAt ?? now;
+    db.withTransactionSync(() => {
+      db.runSync(
+        `INSERT INTO sessions (id, title, source, source_session_id, model, created_at, updated_at, pinned, imported_meta, digest, digest_seq, memory_enabled)
+         VALUES (?, ?, ?, NULL, NULL, ?, ?, 0, NULL, ?, 0, NULL)`,
+        [s.id, s.title || '导入对话', s.source ?? 'local', base, s.updatedAt ?? base + s.messages.length, s.digest ?? null]
+      );
+      s.messages.forEach((m, i) => {
+        if (!m.content?.trim()) return;
+        db.runSync(
+          `INSERT INTO messages (id, session_id, role, content, reasoning, created_at, status, error, meta, seq)
+           VALUES (?, ?, ?, ?, NULL, ?, 'done', NULL, NULL, ?)`,
+          [uuid(), s.id, m.role, m.content, m.createdAt ?? base + i, i + 1]
+        );
+      });
+    });
+    result.imported++;
+  }
+  return result;
+}

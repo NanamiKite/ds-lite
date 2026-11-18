@@ -7,11 +7,15 @@ import {
   Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as DocumentPicker from 'expo-document-picker';
+import * as LegacyFS from 'expo-file-system/legacy';
 import { validateKey } from '@/api/deepseek';
 import { getAccountProvider } from '@/account/provider';
-import { dbStats } from '@/db/repo';
-import { countMemories } from '@/db/memoryRepo';
+import { dbStats, importBackup } from '@/db/repo';
+import { countMemories, importMemories } from '@/db/memoryRepo';
 import { ActionSheet } from '@/components/ActionSheet';
+import { shareAllMarkdown, shareJsonBackup } from '@/export/share';
+import { isBackupJson } from '@/export/format';
 import { useSettings, type ThemeMode } from '@/state/settings';
 import { DS_BLUE } from '@/theme';
 import { useTheme } from '@/theme-context';
@@ -29,6 +33,40 @@ export default function SettingsScreen() {
   const doUnbind = async () => {
     await getAccountProvider().unbind();
     await settings.refreshKeys();
+  };
+
+  const runExport = async (fn: () => Promise<void>) => {
+    try {
+      await fn();
+    } catch (e) {
+      Alert.alert('导出失败', e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const restoreBackup = async () => {
+    const res = await DocumentPicker.getDocumentAsync({
+      type: ['application/json', 'text/*', 'application/octet-stream'],
+      copyToCacheDirectory: true,
+    });
+    if (res.canceled) return;
+    try {
+      const text = await LegacyFS.readAsStringAsync(res.assets[0].uri, {
+        encoding: LegacyFS.EncodingType.UTF8,
+      });
+      const json = JSON.parse(text) as unknown;
+      if (!isBackupJson(json)) {
+        Alert.alert('格式不对', '请选择 deepseek-lite 导出的备份 JSON');
+        return;
+      }
+      const r = importBackup(json.sessions);
+      const memNew = importMemories(json.memories.filter((m) => m.active).map((m) => m.content), 'import');
+      Alert.alert(
+        '恢复完成',
+        `导入 ${r.imported} 个对话${r.skipped ? `，跳过 ${r.skipped} 个（已存在）` : ''}；新增记忆 ${memNew} 条`
+      );
+    } catch (e) {
+      Alert.alert('恢复失败', e instanceof Error ? e.message : String(e));
+    }
   };
 
   const checkBalance = async () => {
@@ -121,6 +159,14 @@ export default function SettingsScreen() {
               {memStats.active}/{memStats.total} 条
             </Text>
           </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+            <Text style={{ color: colors.text, fontSize: 15, flex: 1 }}>跨对话参考</Text>
+            <Switch
+              value={settings.crossChatReference}
+              onValueChange={settings.setCrossChatReference}
+              trackColor={{ true: DS_BLUE }}
+            />
+          </View>
           <Actions>
             <Action colors={colors} label="管理记忆" primary onPress={() => router.push('/memories')} />
           </Actions>
@@ -156,6 +202,11 @@ export default function SettingsScreen() {
 
         <Group colors={colors} title="数据">
           <Row colors={colors} label="本地会话 / 消息" value={`${stats.sessions} / ${stats.messages}`} />
+          <Actions>
+            <Action colors={colors} label="导出备份" onPress={() => runExport(shareJsonBackup)} />
+            <Action colors={colors} label="导出 Markdown" onPress={() => runExport(shareAllMarkdown)} />
+            <Action colors={colors} label="从备份恢复" onPress={restoreBackup} />
+          </Actions>
         </Group>
 
         <Group colors={colors} title="关于">

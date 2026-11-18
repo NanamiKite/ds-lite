@@ -19,10 +19,11 @@
     "test-import.ts",
     "test-memory.ts",
     "test-assemble.ts",
+    "test-export.ts",
     "demo-prompt.ts",
     "../src/import/**/*.ts",
-    "../src/api/search.ts",
     "../src/chat/assemble.ts",
+    "../src/export/format.ts",
     "../src/memory/parse.ts",
     "../src/memory/prompt.ts"
   ]

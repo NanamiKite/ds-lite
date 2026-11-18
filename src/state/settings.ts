@@ -21,6 +21,8 @@ interface SettingsState {
   personaAbout: string;
   personaStyle: string;
   memoryMode: MemoryMode;
+  /** 跨对话参考：把近期其他对话的摘要注入新对话（ChatGPT「参考聊天记录」等价物） */
+  crossChatReference: boolean;
   /**
    * 上下文 token 预算：预算内发送全量历史（配合 DeepSeek 自动前缀缓存），
    * 超出部分滚动摘要压缩后以摘要形式携带
@@ -33,6 +35,7 @@ interface SettingsState {
   setContextTokens(n: number): void;
   setPersona(patch: Partial<Pick<SettingsState, 'personaEnabled' | 'personaAbout' | 'personaStyle'>>): void;
   setMemoryMode(m: MemoryMode): void;
+  setCrossChatReference(v: boolean): void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -47,6 +50,7 @@ export const useSettings = create<SettingsState>()(
       personaAbout: '',
       personaStyle: '',
       memoryMode: 'manual',
+      crossChatReference: false,
 
       setOnboarded: () => set({ onboarded: true }),
       setThemeMode: (themeMode) => set({ themeMode }),
@@ -61,6 +65,7 @@ export const useSettings = create<SettingsState>()(
         set({ contextTokens: Math.max(4000, Math.min(128000, Math.round(contextTokens))) }),
       setPersona: (patch) => set(patch),
       setMemoryMode: (memoryMode) => set({ memoryMode }),
+      setCrossChatReference: (crossChatReference) => set({ crossChatReference }),
     }),
     {
       name: 'dsl.settings',
@@ -74,6 +79,7 @@ export const useSettings = create<SettingsState>()(
         personaAbout: s.personaAbout,
         personaStyle: s.personaStyle,
         memoryMode: s.memoryMode,
+        crossChatReference: s.crossChatReference,
       }),
     }
   )

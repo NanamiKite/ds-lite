@@ -5,8 +5,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Pressable,
-  Share, StyleSheet, Text, TextInput, View,
+  Alert, FlatList, KeyboardAvoidingView, Pressable, StyleSheet, Text, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -39,10 +38,6 @@ export default function ChatScreen() {
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const [search, setSearch] = useState(false);
-  const [digest, setDigest] = useState<string | null>(null);
-  const [digestMsgCount, setDigestMsgCount] = useState(0);
-  const [digestOpen, setDigestOpen] = useState(false);
-  const [digestBusy, setDigestBusy] = useState(false);
   const [memEnabled, setMemEnabled] = useState<boolean | null>(null);
   const [msgSheet, setMsgSheet] = useState<ChatMessage | null>(null);
 
@@ -54,7 +49,6 @@ export default function ChatScreen() {
   const send = useChatStore((s) => s.send);
   const regenerate = useChatStore((s) => s.regenerate);
   const stop = useChatStore((s) => s.stop);
-  const refreshDigest = useChatStore((s) => s.refreshDigest);
   const apiKeyBound = useSettings((s) => s.apiKeyBound);
   const memoryMode = useSettings((s) => s.memoryMode);
 
@@ -67,12 +61,8 @@ export default function ChatScreen() {
     if (s) {
       setTitle(s.title);
       setSource(s.source);
-      setDigest(s.digest ?? null);
       setMemEnabled(s.memoryEnabled ?? null);
     }
-    setDigestMsgCount(
-      listMessages(sessionId).filter((m) => m.role === 'user' || m.role === 'assistant').length
-    );
   }, [sessionId]);
 
   useFocusEffect(
@@ -133,11 +123,6 @@ export default function ChatScreen() {
     send(sessionId, text, { thinking, search });
   };
 
-  const copyDigest = () => {
-    if (!digest) return;
-    Clipboard.setStringAsync(digest).then(() => Alert.alert('已复制', '摘要已复制到剪贴板')).catch(() => undefined);
-  };
-
   const msgSheetActions: SheetAction[] = msgSheet
     ? [
         {
@@ -157,24 +142,6 @@ export default function ChatScreen() {
       ]
     : [];
 
-  const shareDigest = async () => {
-    if (!digest) return;
-    try {
-      await Share.share({ message: digest });
-    } catch { /* 用户取消 */ }
-  };
-
-  const regenDigest = async () => {
-    setDigestBusy(true);
-    try {
-      const ok = await refreshDigest(sessionId);
-      if (!ok) Alert.alert('提示', '尚未绑定 API Key，无法生成摘要');
-      reload();
-    } finally {
-      setDigestBusy(false);
-    }
-  };
-
   const empty = display.length === 0;
 
   return (
@@ -184,13 +151,9 @@ export default function ChatScreen() {
         <Pressable hitSlop={10} onPress={() => router.back()} style={styles.backBtn}>
           <Text style={{ color: colors.text, fontSize: 22 }}>‹</Text>
         </Pressable>
-        <Pressable
-          style={{ flex: 1, alignItems: 'center', maxWidth: 250 }}
-          onPress={() => setDigestOpen(true)}
-          hitSlop={6}
-        >
+        <View style={{ flex: 1, alignItems: 'center', maxWidth: 250 }}>
           <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-            {title}{digest ? ' 📄' : ''}
+            {title}
           </Text>
           {source !== 'local' ? (
             <View style={[styles.badge, { backgroundColor: `${SOURCE_COLOR[source]}1A` }]}>
@@ -205,7 +168,7 @@ export default function ChatScreen() {
               <Text style={{ color: colors.textTertiary, fontSize: 11 }}>deepseek-flash</Text>
             )
           )}
-        </Pressable>
+        </View>
         {memoryMode !== 'off' && (
           <Pressable
             style={styles.memBtn}
@@ -310,34 +273,6 @@ export default function ChatScreen() {
         title={msgSheet?.role === 'user' ? '用户消息' : '助手消息'}
         actions={msgSheetActions}
       />
-
-      {/* 会话摘要：点击标题查看，支持复制/分享（发小红书直接粘贴） */}
-      <Modal visible={digestOpen} transparent animationType="fade" onRequestClose={() => setDigestOpen(false)}>
-        <Pressable style={styles.modalMask} onPress={() => setDigestOpen(false)}>
-          <Pressable style={[styles.digestCard, { backgroundColor: colors.surface }]} onPress={() => undefined}>
-            <Text style={[styles.digestTitle, { color: colors.text }]}>📄 对话摘要</Text>
-            <Text style={[styles.digestMeta, { color: colors.textTertiary }]}>
-              基于 {digestMsgCount} 条消息{digest ? ' · 随对话自动更新' : ''}
-            </Text>
-            <Text style={[styles.digestBody, { color: colors.text }]}>
-              {digest ?? '几轮对话后自动生成'}
-            </Text>
-            <View style={styles.digestActions}>
-              <Pressable style={styles.digestBtn} onPress={copyDigest} disabled={!digest}>
-                <Text style={{ color: digest ? DS_BLUE : colors.textTertiary, fontSize: 14, fontWeight: '600' }}>复制</Text>
-              </Pressable>
-              <Pressable style={styles.digestBtn} onPress={shareDigest} disabled={!digest}>
-                <Text style={{ color: digest ? DS_BLUE : colors.textTertiary, fontSize: 14, fontWeight: '600' }}>分享</Text>
-              </Pressable>
-              <Pressable style={styles.digestBtn} onPress={regenDigest} disabled={digestBusy}>
-                {digestBusy
-                  ? <ActivityIndicator size="small" color={DS_BLUE} />
-                  : <Text style={{ color: DS_BLUE, fontSize: 14, fontWeight: '600' }}>{digest ? '重新生成' : '立即生成'}</Text>}
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -368,11 +303,4 @@ const styles = StyleSheet.create({
   },
   memoryToast: { marginHorizontal: 12, marginBottom: 6, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   memBtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
-  modalMask: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 26 },
-  digestCard: { borderRadius: 16, padding: 18, width: '100%', gap: 8 },
-  digestTitle: { fontSize: 16, fontWeight: '700' },
-  digestMeta: { fontSize: 12 },
-  digestBody: { fontSize: 14.5, lineHeight: 22, minHeight: 60 },
-  digestActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 18, marginTop: 6 },
-  digestBtn: { paddingVertical: 6, paddingHorizontal: 4 },
 });

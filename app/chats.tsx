@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
+import { shareSessionMarkdown } from '@/export/share';
 import { createSession, listSessions, togglePin, deleteSession, renameSession } from '@/db/repo';
 import { SOURCE_COLOR, SOURCE_LABEL, type Session } from '@/types';
 import { useTheme } from '@/theme-context';
@@ -80,6 +81,12 @@ export default function ChatsScreen() {
             label: '重命名',
             icon: '✎',
             onPress: () => { setRenaming(sheetSession); setRenameText(sheetSession.title); },
+          },
+          {
+            key: 'export',
+            label: '导出对话（Markdown）',
+            icon: '⇪',
+            onPress: () => { shareSessionMarkdown(sheetSession.id).catch(() => undefined); },
           },
           {
             key: 'del',

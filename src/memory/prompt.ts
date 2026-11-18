@@ -33,15 +33,33 @@ export function buildMemoryPrompt(memories: string[]): string {
   return ['以下是关于用户的长期记忆，回答时自然地参考（不必逐条复述）：', ...items.map((m) => `- ${m}`)].join('\n');
 }
 
+/** 跨对话参考：注入近期其他对话的摘要（ChatGPT「参考聊天记录」的等价物） */
+export interface CrossChatItem {
+  title: string;
+  digest: string;
+}
+
+export const MAX_CROSS_CHAT_IN_PROMPT = 5;
+
+export function buildCrossChatPrompt(items: CrossChatItem[]): string {
+  const list = items
+    .filter((i) => i.digest.trim())
+    .map((i) => `- ${i.title.slice(0, 30)}：${i.digest.trim().slice(0, 150)}`)
+    .slice(0, MAX_CROSS_CHAT_IN_PROMPT);
+  if (!list.length) return '';
+  return ['用户近期其他对话的摘要（供了解背景，避免重复询问已知信息）：', ...list].join('\n');
+}
+
 export interface SystemPromptParts {
   base: string;
   persona?: string;
   memories?: string;
-  search?: string;
+  /** 跨对话参考：近期其他对话摘要 */
+  crossChat?: string;
 }
 
-export function composeSystemPrompt({ base, persona, memories, search }: SystemPromptParts): string {
-  return [base, persona, memories, search]
+export function composeSystemPrompt({ base, persona, memories, crossChat }: SystemPromptParts): string {
+  return [base, persona, memories, crossChat]
     .map((s) => (s ?? '').trim())
     .filter(Boolean)
     .join('\n\n');

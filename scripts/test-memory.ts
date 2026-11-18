@@ -4,7 +4,9 @@
  */
 import assert from 'node:assert/strict';
 import { parseMemoriesText, dedupeMemories, normalizeForDedupe, parseFacts } from '../src/memory/parse';
-import { buildPersonaPrompt, buildMemoryPrompt, composeSystemPrompt, MAX_MEMORIES_IN_PROMPT } from '../src/memory/prompt';
+import {
+  buildPersonaPrompt, buildMemoryPrompt, buildCrossChatPrompt, composeSystemPrompt, MAX_MEMORIES_IN_PROMPT,
+} from '../src/memory/prompt';
 
 let passed = 0;
 const results: Array<{ name: string; ok: boolean; note?: string }> = [];
@@ -93,9 +95,19 @@ test('memoryPrompt: 条数与长度上限', () => {
   assert.ok(!buildMemoryPrompt(long).includes('x'.repeat(121)));
 });
 test('composeSystemPrompt: 非空段以空行连接，空段跳过', () => {
-  const s = composeSystemPrompt({ base: 'BASE', persona: 'P', memories: '', search: 'S' });
-  assert.equal(s, 'BASE\n\nP\n\nS');
+  const s = composeSystemPrompt({ base: 'BASE', persona: 'P', memories: '', crossChat: 'C' });
+  assert.equal(s, 'BASE\n\nP\n\nC');
   assert.equal(composeSystemPrompt({ base: 'B' }), 'B');
+});
+
+test('crossChat: 近期对话摘要注入，上限 5 条且无摘要时为空', () => {
+  assert.equal(buildCrossChatPrompt([]), '');
+  const many = Array.from({ length: 8 }, (_, i) => ({ title: `对话${i}`, digest: `摘要${i}` }));
+  const p = buildCrossChatPrompt(many);
+  const lines = p.split('\n');
+  assert.equal(lines.length - 1, 5, '最多注入 5 条');
+  assert.ok(p.includes('对话0') && !p.includes('对话7'), '取最新的前 5 条');
+  assert.equal(buildCrossChatPrompt([{ title: 't', digest: '  ' }]), '');
 });
 
 // ── 汇总 ──────────────────────────────────────────────────────────────

@@ -1,0 +1,65 @@
+/**
+ * 导出格式测试（纯逻辑）
+ */
+import assert from 'node:assert/strict';
+import {
+  buildBackup, isBackupJson, sessionToMarkdown, sessionsToMarkdown,
+  type ExportSession,
+} from '../src/export/format';
+
+let passed = 0;
+const results: Array<{ name: string; ok: boolean; note?: string }> = [];
+
+function test(name: string, fn: () => void | string) {
+  try {
+    const note = fn();
+    results.push({ name, ok: true, note: typeof note === 'string' ? note : undefined });
+    passed++;
+  } catch (e) {
+    results.push({ name, ok: false, note: e instanceof Error ? e.message : String(e) });
+  }
+}
+
+const s = (id: string, title: string): ExportSession => ({
+  id, title, source: 'local', createdAt: 1700000000000, updatedAt: 1700000600000,
+  digest: '讨论了里斯本旅行计划',
+  messages: [
+    { role: 'user', content: '帮我规划三天行程', createdAt: 1700000001000 },
+    { role: 'assistant', content: '第一天：阿尔法玛老城区…', reasoning: '考虑用户偏好步行', createdAt: 1700000010000 },
+  ],
+});
+
+test('备份 JSON：结构标记与识别', () => {
+  const b = buildBackup([s('1', '里斯本')], [{ content: '素食者', source: 'manual', active: true, createdAt: 1 }]);
+  assert.equal(b.app, 'deepseek-lite');
+  assert.equal(b.schema, 1);
+  assert.ok(isBackupJson(b));
+  assert.ok(!isBackupJson({ app: 'other' }));
+  assert.ok(!isBackupJson(null));
+  // 往返：JSON 序列化后仍可识别
+  assert.ok(isBackupJson(JSON.parse(JSON.stringify(b))));
+});
+
+test('单会话 Markdown：标题/摘要/角色标签/思维链折叠', () => {
+  const md = sessionToMarkdown(s('1', '里斯本'));
+  assert.ok(md.startsWith('# 里斯本'));
+  assert.ok(md.includes('摘要：讨论了里斯本旅行计划'));
+  assert.ok(md.includes('🧑 我'));
+  assert.ok(md.includes('🐋 DeepSeek'));
+  assert.ok(md.includes('第一天：阿尔法玛老城区'));
+  assert.ok(md.includes('<details><summary>思维链</summary>'));
+});
+
+test('全会话 Markdown：汇总头部与分隔', () => {
+  const md = sessionsToMarkdown([s('1', 'A'), s('2', 'B')]);
+  assert.ok(md.includes('# DeepSeek Lite 对话记录'));
+  assert.ok(md.includes('2 个对话'));
+  assert.ok(md.includes('# A') && md.includes('# B'));
+});
+
+const failed = results.filter((r) => !r.ok);
+for (const r of results) {
+  console.log(`${r.ok ? '✓' : '✗'} ${r.name}${r.note ? ` — ${r.note}` : ''}`);
+}
+console.log(`\n${passed}/${results.length} passed`);
+if (failed.length) process.exit(1);

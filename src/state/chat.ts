@@ -23,8 +23,9 @@ import {
 import { getApiKey } from '@/storage/secure';
 import { addMemory, listMemories } from '@/db/memoryRepo';
 import { dedupeMemories } from '@/memory/parse';
-import { buildMemoryPrompt, buildPersonaPrompt, composeSystemPrompt } from '@/memory/prompt';
+import { buildCrossChatPrompt, buildMemoryPrompt, buildPersonaPrompt, composeSystemPrompt } from '@/memory/prompt';
 import { extractMemories } from '@/memory/auto';
+import { listRecentDigests } from '@/db/repo';
 import {
   assembleTurnMessages,
   buildDigestPrompt,
@@ -64,8 +65,6 @@ interface ChatStore {
   stop(): void;
   clearLive(): void;
   clearMemoryToast(): void;
-  /** 手动（重新）生成本会话的内容摘要 */
-  refreshDigest(sessionId: string): Promise<boolean>;
 }
 
 const SYSTEM_PROMPT = '你是 DeepSeek，一个忠于事实、乐于助人的 AI 助手。';
@@ -99,7 +98,13 @@ function buildContext(sessionId: string, opts: SendOptions): BuiltContext {
   const memories = settings.memoryMode !== 'off' && session?.memoryEnabled !== false
     ? buildMemoryPrompt(listMemories({ onlyActive: true }).map((m) => m.content))
     : '';
-  const systemPrompt = composeSystemPrompt({ base: SYSTEM_PROMPT, persona, memories });
+  // 跨对话参考：近期其他对话的摘要注入（开关控制，排除对话级关闭记忆的会话）
+  const crossChat = settings.crossChatReference && session?.memoryEnabled !== false
+    ? buildCrossChatPrompt(
+        listRecentDigests(sessionId).map((d) => ({ title: d.title, digest: d.digest }))
+      )
+    : '';
+  const systemPrompt = composeSystemPrompt({ base: SYSTEM_PROMPT, persona, memories, crossChat });
 
   const assembled = assembleTurnMessages({
     systemPrompt,
@@ -380,12 +385,5 @@ export const useChatStore = create<ChatStore>()((set, get) => {
     clearLive: () => set({ live: null }),
 
     clearMemoryToast: () => set({ memoryToast: null }),
-
-    refreshDigest: async (sessionId) => {
-      const key = await getApiKey();
-      if (!key) return false;
-      await maybeDigest(sessionId, key, 1);
-      return true;
-    },
   };
 });
