@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "GPL-3.0",
+  "packageManager": "pnpm@11.28.5",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
