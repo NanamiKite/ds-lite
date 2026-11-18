@@ -5,7 +5,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Pressable, SectionList, StyleSheet, Text, TextInput, View,
+  Modal, Pressable, SectionList, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import {
   createSession, listSessions, togglePin, deleteSession, renameSession,
 } from '@/db/repo';
 import { SOURCE_COLOR, SOURCE_LABEL, type Session } from '@/types';
+import { DS_BLUE } from '@/theme';
 import { useTheme } from '@/theme-context';
 import { useChatStore } from '@/state/chat';
 
@@ -256,6 +257,38 @@ export default function ChatsScreen() {
         subtitle={confirmDelete ? '删除后无法恢复' : undefined}
         actions={sheetActions}
       />
+
+      <Modal visible={!!renaming} transparent animationType="fade" onRequestClose={() => setRenaming(null)}>
+        <Pressable style={styles.modalMask} onPress={() => setRenaming(null)}>
+          <Pressable style={[styles.modalCard, { backgroundColor: colors.surface }]} onPress={() => undefined}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>重命名对话</Text>
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
+              value={renameText}
+              onChangeText={setRenameText}
+              autoFocus
+              selectTextOnFocus
+            />
+            <View style={styles.modalActions}>
+              <Pressable onPress={() => setRenaming(null)} style={styles.modalBtn}>
+                <Text style={{ color: colors.textSecondary, fontSize: 15 }}>取消</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  if (renaming && renameText.trim()) {
+                    renameSession(renaming.id, renameText);
+                    reload();
+                  }
+                  setRenaming(null);
+                }}
+                style={styles.modalBtn}
+              >
+                <Text style={{ color: DS_BLUE, fontSize: 15, fontWeight: '600' }}>确定</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -301,4 +334,10 @@ const styles = StyleSheet.create({
     position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28,
     alignItems: 'center', justifyContent: 'center', elevation: 4, shadowRadius: 8, shadowOpacity: 0.25, shadowOffset: { width: 0, height: 4 },
   },
+  modalMask: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 32 },
+  modalCard: { borderRadius: 16, padding: 20, width: '100%', gap: 14 },
+  modalTitle: { fontSize: 17, fontWeight: '600' },
+  modalInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 15 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 18 },
+  modalBtn: { paddingVertical: 6, paddingHorizontal: 8 },
 });

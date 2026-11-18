@@ -5,7 +5,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert, FlatList, Image, KeyboardAvoidingView, Pressable, StyleSheet, Text, View,
+  FlatList, Image, KeyboardAvoidingView, Pressable, StyleSheet, Text, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -15,7 +15,7 @@ import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
 import { getSession, listMessages, setSessionMemoryEnabled } from '@/db/repo';
 import { useChatStore } from '@/state/chat';
 import { useSettings } from '@/state/settings';
-import { SOURCE_COLOR, SOURCE_LABEL, type ChatMessage } from '@/types';
+import { SOURCE_COLOR, SOURCE_LABEL, type ChatMessage, type Session } from '@/types';
 import { DS_BLUE } from '@/theme';
 import { useTheme } from '@/theme-context';
 
@@ -26,19 +26,30 @@ const SUGGESTIONS = [
   '把这段话翻译成英文',
 ];
 
+/**
+ * SQLite 快照缓存：以 (sessionId, tick) 为版本键，渲染期间直接读取缓存。
+ * tick 由聊天 store 维护（数据变更时 bump），同版本返回同一引用，
+ * 满足渲染纯度；miss 时同步读库并写缓存（StrictMode 双渲染下第二次命中）。
+ */
+const snapCache = new Map<string, { tick: number; messages: ChatMessage[]; session: Session | null }>();
+
+function loadSnapshot(sessionId: string, tick: number): { messages: ChatMessage[]; session: Session | null } {
+  const hit = snapCache.get(sessionId);
+  if (hit && hit.tick === tick) return hit;
+  const entry = { tick, messages: listMessages(sessionId), session: getSession(sessionId) };
+  snapCache.set(sessionId, entry);
+  return entry;
+}
+
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const sessionId = String(id);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [title, setTitle] = useState('新对话');
-  const [source, setSource] = useState<'local' | 'chatgpt' | 'gemini' | 'deepseek'>('local');
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
   const [search, setSearch] = useState(false);
-  const [memEnabled, setMemEnabled] = useState<boolean | null>(null);
   const [msgSheet, setMsgSheet] = useState<ChatMessage | null>(null);
 
   const live = useChatStore((s) => s.live);
@@ -55,26 +66,19 @@ export default function ChatScreen() {
 
   const busy = busySession === sessionId;
 
-  const reload = useCallback(() => {
-    if (!sessionId) return;
-    setMessages(listMessages(sessionId));
-    const s = getSession(sessionId);
-    if (s) {
-      setTitle(s.title);
-      setSource(s.source);
-      setMemEnabled(s.memoryEnabled ?? null);
-    }
-  }, [sessionId]);
-
+  // 数据版本 = tick：流式/队列/后台任务完成时 store 会 bump；回到页面时也 bump 一次
   useFocusEffect(
     useCallback(() => {
-      reload();
-    }, [reload])
+      useChatStore.getState().bump();
+    }, [])
   );
 
-  useEffect(() => {
-    reload();
-  }, [tick, reload]);
+  const snap = loadSnapshot(sessionId, tick);
+  const messages = snap.messages;
+  const session = snap.session;
+  const title = session?.title ?? '新对话';
+  const source = session?.source ?? 'local';
+  const memEnabled = session?.memoryEnabled ?? null;
 
   // 自动记忆提取提示：显示 4.5 秒后消失
   useEffect(() => {
@@ -270,7 +274,7 @@ export default function ChatScreen() {
               : () => {
                   const next = memEnabled === false ? true : false;
                   setSessionMemoryEnabled(sessionId, next);
-                  setMemEnabled(next);
+                  useChatStore.getState().bump();
                 }
           }
         />

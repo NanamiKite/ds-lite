@@ -54,6 +54,8 @@ interface ChatStore {
   live: LiveStream | null;
   /** 递增触发界面刷新流式消息 */
   tick: number;
+  /** 数据版本号 +1：聊天页快照缓存据此重读 SQLite */
+  bump(): void;
   busySession: string | null;
   abortController: AbortController | null;
   /** 自动记忆提取结果提示（聊天页 toast 用） */
@@ -379,6 +381,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
   return {
     live: null,
     tick: 0,
+    bump: () => set({ tick: get().tick + 1 }),
     busySession: null,
     abortController: null,
     memoryToast: null,
