@@ -100,8 +100,8 @@ export default function Onboarding() {
         <View style={styles.center}>
           <View style={styles.logoBadge}>
             <Image
-              source={require('../assets/whale.png')}
-              style={{ width: 54, height: 54 }}
+              source={require('../assets/mascot.png')}
+              style={{ width: 62, height: 62 }}
               resizeMode="contain"
             />
           </View>

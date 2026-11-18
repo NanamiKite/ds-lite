@@ -186,8 +186,8 @@ export default function ChatScreen() {
           <View style={[styles.welcome, { backgroundColor: colors.background }]}>
             <View style={styles.welcomeBadge}>
               <Image
-                source={require('../../assets/whale.png')}
-                style={{ width: 52, height: 52 }}
+                source={require('../../assets/mascot.png')}
+                style={{ width: 60, height: 60 }}
                 resizeMode="contain"
               />
             </View>
