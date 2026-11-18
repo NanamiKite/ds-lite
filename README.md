@@ -13,9 +13,9 @@
 **非官方第三方客户端，与 DeepSeek 官方无关联。** 对话能力来自
 [DeepSeek 开放平台](https://platform.deepseek.com)，按量计费。
 
-[![CI](https://github.com/NanamiKite/deepseek-lite/actions/workflows/ci.yml/badge.svg)](https://github.com/NanamiKite/deepseek-lite/actions/workflows/ci.yml)
+[![CI](https://github.com/NanamiKite/ds-lite/actions/workflows/ci.yml/badge.svg)](https://github.com/NanamiKite/ds-lite/actions/workflows/ci.yml)
 
-[下载 APK](https://github.com/NanamiKite/deepseek-lite/releases) · [快速开始](#快速开始) · [导入历史对话](docs/data.md) · [个性与记忆](docs/memory.md) · [对话机制](docs/context.md) · [参与开发](docs/development.md)
+[下载 APK](https://github.com/NanamiKite/ds-lite/releases) · [快速开始](#快速开始) · [导入历史对话](docs/data.md) · [个性与记忆](docs/memory.md) · [对话机制](docs/context.md) · [参与开发](docs/development.md)
 
 **简体中文**
 
@@ -67,14 +67,14 @@
 
 ## 快速开始
 
-**普通用户**：到 [Releases](https://github.com/NanamiKite/deepseek-lite/releases) 下载最新 APK 安装（首次安装需允许"未知来源/安装未知应用"），打开 App 按三步引导绑定 API Key 即可。
+**普通用户**：到 [Releases](https://github.com/NanamiKite/ds-lite/releases) 下载最新 APK 安装（首次安装需允许"未知来源/安装未知应用"），打开 App 按三步引导绑定 API Key 即可。
 
 <details>
 <summary><b>从源码运行 / 参与开发</b></summary>
 
 ```bash
-git clone https://github.com/NanamiKite/deepseek-lite.git
-cd deepseek-lite
+git clone https://github.com/NanamiKite/ds-lite.git
+cd ds-lite
 pnpm install        # 或 npm install / yarn
 npx expo start
 ```
