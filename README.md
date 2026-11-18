@@ -4,7 +4,7 @@
 
 # DeepSeek Lite
 
-**原生手感的 DeepSeek 手机客户端 —— Key 是你的，数据在你手里。**
+**原生手感的 DeepSeek 手机客户端。**
 
 官方 App 的体验很好，但它不让你绑自己的 API Key，也带不走你在 ChatGPT 和 Gemini
 里的历史对话。DeepSeek Lite 补上这两件事：对齐官方 App 的交互，用开放平台 API
