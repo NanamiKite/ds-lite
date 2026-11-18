@@ -9,6 +9,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import * as LegacyFS from 'expo-file-system/legacy';
+import * as WebBrowser from 'expo-web-browser';
 import { validateKey } from '@/api/deepseek';
 import { getAccountProvider } from '@/account/provider';
 import { dbStats, importBackup } from '@/db/repo';
@@ -69,13 +70,26 @@ export default function SettingsScreen() {
     }
   };
 
+  const openUrl = (url: string) => {
+    WebBrowser.openBrowserAsync(url, {
+      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+    }).catch(() => undefined);
+  };
+
   const checkBalance = async () => {
     const key = await getAccountProvider().getApiKey();
     if (!key) { Alert.alert('提示', '尚未绑定 API Key'); return; }
     setChecking(true);
     try {
       const r = await validateKey(key);
-      if (r.ok && r.balance) Alert.alert('余额', `${r.balance.amount} ${r.balance.currency}`);
+      if (r.ok && r.balance) Alert.alert(
+        '余额',
+        `${r.balance.amount} ${r.balance.currency === 'CNY' ? '元' : r.balance.currency}`,
+        [
+          { text: '知道了' },
+          { text: '前往充值 →', onPress: () => openUrl('https://platform.deepseek.com/top_up') },
+        ]
+      );
       else if (r.ok) Alert.alert('正常', 'Key 有效（余额接口未返回数据）');
       else Alert.alert('校验失败', r.error);
     } finally { setChecking(false); }
@@ -101,6 +115,11 @@ export default function SettingsScreen() {
             <Action colors={colors} label={settings.apiKeyBound ? '重新绑定（引导）' : '开始绑定（引导）'} primary onPress={() => router.push('/onboarding?mode=guide')} />
             <Action colors={colors} label="查余额" onPress={checkBalance} disabled={checking || !settings.apiKeyBound} />
             <Action colors={colors} label="解绑" danger onPress={unbind} disabled={!settings.apiKeyBound} />
+          </Actions>
+          <Actions>
+            <Action colors={colors} label="💰 充值" onPress={() => openUrl('https://platform.deepseek.com/top_up')} />
+            <Action colors={colors} label="🔑 API Keys" onPress={() => openUrl('https://platform.deepseek.com/api_keys')} />
+            <Action colors={colors} label="🏠 开放平台" onPress={() => openUrl('https://platform.deepseek.com')} />
           </Actions>
         </Group>
 

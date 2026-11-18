@@ -4,6 +4,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import type { ChatMessage } from '@/types';
 import { useTheme } from '@/theme-context';
 import { MarkdownView } from './MarkdownView';
@@ -92,6 +93,17 @@ export function MessageBubble({ message, isLive, canRegenerate, onRegenerate, on
       {message.status === 'error' && !!message.error && (
         <View style={styles.errorRow}>
           <Text style={[styles.errorText, { color: colors.danger }]}>⚠ {message.error}</Text>
+          {message.error.includes('余额不足') && (
+            <Pressable
+              onPress={() =>
+                WebBrowser.openBrowserAsync('https://platform.deepseek.com/top_up', {
+                  presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+                }).catch(() => undefined)
+              }
+            >
+              <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>充值 →</Text>
+            </Pressable>
+          )}
           {canRegenerate && onRegenerate && (
             <Pressable onPress={onRegenerate}>
               <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>重试</Text>
