@@ -5,6 +5,9 @@ node_modules/
 .export-smoke/
 .test-dist/
 dist/
+dist-ci/
+android/
+ios/
 web-build/
 *.log
 .env

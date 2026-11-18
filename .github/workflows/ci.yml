@@ -4,6 +4,7 @@ on:
   push:
     branches: [master]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   checks:
@@ -55,6 +56,69 @@ jobs:
 
       - name: Bundle sanity check
         run: |
-          test -n "$(find dist-ci -name '*.js' -size +100k)" || { echo "Bundle missing or too small"; exit 1; }
+          # Hermes 开启时产物是 .hbc 字节码，关闭时是 .js —— 两者皆可
+          test -n "$(find dist-ci \( -name '*.js' -o -name '*.hbc' \) -size +100k)" || {
+            echo "Bundle missing or too small"; find dist-ci -type f -exec ls -lh {} \; ; exit 1
+          }
           echo "Bundle OK:"
           du -sh dist-ci
+          find dist-ci \( -name '*.js' -o -name '*.hbc' \) -exec ls -lh {} \;
+
+  android-apk:
+    name: Android APK (debug-signed)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prebuild native project
+        run: npx expo prebuild --platform android --no-install
+        env:
+          EXPO_NO_TELEMETRY: '1'
+          CI: 'true'
+
+      - name: Ensure debug keystore
+        run: |
+          mkdir -p $HOME/.android
+          if [ ! -f $HOME/.android/debug.keystore ]; then
+            keytool -genkeypair -v -storetype PKCS12 -keystore $HOME/.android/debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 \
+              -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Build release APK (debug-signed)
+        run: |
+          cd android
+          # release 无自有 keystore，用 debug keystore 签名（可直接安装，适合 Releases 分发）
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$HOME/.android/debug.keystore \
+            -Pandroid.injected.signing.store.password=android \
+            -Pandroid.injected.signing.key.alias=androiddebugkey \
+            -Pandroid.injected.signing.key.password=android \
+            --no-daemon
+
+      - name: Collect APK
+        run: |
+          mkdir -p apk-out
+          cp android/app/build/outputs/apk/release/*.apk apk-out/
+          ls -lh apk-out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ds-lite-apk
+          path: apk-out/*.apk
+          retention-days: 30
