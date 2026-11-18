@@ -22,7 +22,8 @@
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foreground": "./assets/adaptive-icon.png",
-        "backgroundColor": "#4D6BFE"
+        "background": "./assets/adaptive-icon-background.png",
+        "monochrome": "./assets/adaptive-icon-monochrome.png"
       }
     },
     "plugins": [
