@@ -156,4 +156,4 @@ pnpm demo:prompt   # 打印实际注入的 system prompt
 
 ## 许可证
 
-[MIT](LICENSE)。本项目与 DeepSeek 官方无关联；API 服务与计费由 DeepSeek 开放平台提供。
+[GPL-3.0](LICENSE)（源码级 copyleft：基于本项目的衍生作品须以同许可证开源）。本项目与 DeepSeek 官方无关联；API 服务与计费由 DeepSeek 开放平台提供。
