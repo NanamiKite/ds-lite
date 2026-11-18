@@ -1,6 +1,6 @@
 # 个性与记忆
 
-DeepSeek 的 chat API 无状态，没有官方的个性与记忆能力。deepseek-lite 在客户端实现等价物，数据全部存本机 SQLite。
+DeepSeek 的 chat API 无状态，没有官方的个性与记忆能力。ds-lite 在客户端实现等价物，数据全部存本机 SQLite。
 
 ## 自定义指令（个性）
 

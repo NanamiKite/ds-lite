@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "DeepSeek Lite",
-    "slug": "deepseek-lite",
+    "name": "DS Lite",
+    "slug": "ds-lite",
     "version": "0.1.0",
-    "scheme": "deepseeklite",
+    "scheme": "dslite",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

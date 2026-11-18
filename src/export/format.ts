@@ -28,7 +28,8 @@ export interface ExportMemories {
 }
 
 export interface BackupPayload {
-  app: 'deepseek-lite';
+  /** 备份来源标记：新备份写 ds-lite；恢复时兼容识别旧 deepseek-lite 备份 */
+  app: 'ds-lite' | 'deepseek-lite';
   schema: 1;
   exportedAt: number;
   sessions: ExportSession[];
@@ -37,7 +38,7 @@ export interface BackupPayload {
 
 export function buildBackup(sessions: ExportSession[], memories: ExportMemories[]): BackupPayload {
   return {
-    app: 'deepseek-lite',
+    app: 'ds-lite',
     schema: 1,
     exportedAt: Date.now(),
     sessions,
@@ -46,12 +47,9 @@ export function buildBackup(sessions: ExportSession[], memories: ExportMemories[
 }
 
 export function isBackupJson(v: unknown): v is BackupPayload {
-  return (
-    !!v &&
-    typeof v === 'object' &&
-    (v as { app?: unknown }).app === 'deepseek-lite' &&
-    Array.isArray((v as { sessions?: unknown }).sessions)
-  );
+  if (!v || typeof v !== 'object' || !Array.isArray((v as { sessions?: unknown }).sessions)) return false;
+  const app = (v as { app?: unknown }).app;
+  return app === 'ds-lite' || app === 'deepseek-lite';
 }
 
 /** 备份恢复前的运行时清洗：损坏会话/消息跳过而非整批失败（结果可测） */
@@ -138,7 +136,7 @@ export function sessionToMarkdown(s: ExportSession, includeReasoning = false): s
 
 export function sessionsToMarkdown(sessions: ExportSession[]): string {
   const header = [
-    '# DeepSeek Lite 对话记录',
+    '# DS Lite 对话记录',
     '',
     `导出时间：${new Date().toLocaleString('zh-CN')} · ${sessions.length} 个对话`,
     '',

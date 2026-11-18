@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="assets/icon.png" alt="DeepSeek Lite" width="96">
+<img src="assets/icon.png" alt="DS Lite" width="96">
 
-# DeepSeek Lite
+# DS Lite
 
 **原生手感的 DeepSeek 手机客户端。**
 
 官方 App 的体验很好，但它不让你绑自己的 API Key，也带不走你在 ChatGPT 和 Gemini
-里的历史对话。DeepSeek Lite 补上这两件事：对齐官方 App 的交互，用开放平台 API
+里的历史对话。DS Lite 补上这两件事：对齐官方 App 的交互，用开放平台 API
 对话，会话与记忆全部存在本机。
 
 **非官方第三方客户端，与 DeepSeek 官方无关联。** 对话能力来自
@@ -145,7 +145,7 @@ pnpm demo:prompt   # 打印实际注入的 system prompt
 
 目录结构、数据库迁移、平台注意事项见 [开发文档](docs/development.md)。
 
-## 为什么叫 deepseek-lite
+## 为什么叫 ds-lite
 
 轻（lite）：单端应用、零后端、只用官方开放能力 —— 以及诚实地表明它是非官方的轻量替代品。
 

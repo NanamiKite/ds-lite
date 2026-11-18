@@ -7,6 +7,7 @@ let db: SQLite.SQLiteDatabase | null = null;
 
 export function getDb(): SQLite.SQLiteDatabase {
   if (!db) {
+    // DB 文件名沿用旧名 deepseek-lite.db：改名会让既有安装的用户数据"消失"
     db = SQLite.openDatabaseSync('deepseek-lite.db');
     db.execSync(`
       PRAGMA journal_mode = WAL;

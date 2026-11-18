@@ -94,4 +94,4 @@ GitHub Actions（[ci.yml](../.github/workflows/ci.yml)），push/PR 触发：
 
 - RN 0.88 全 edge-to-edge，安卓键盘避让统一用 `KeyboardAvoidingView` 的 padding 行为，标题栏放在避让区外
 - `react-native-gesture-handler` 的 `ReanimatedSwipeable` 从 `react-native-gesture-handler/ReanimatedSwipeable` 子路径导入（主入口未导出）
-- 倒置 FlatList 中的空状态/欢迎页不要用 ListEmptyComponent（会被连带翻转），deepseek-lite 把欢迎页放在列表外按条件渲染
+- 倒置 FlatList 中的空状态/欢迎页不要用 ListEmptyComponent（会被连带翻转），DS Lite 把欢迎页放在列表外按条件渲染

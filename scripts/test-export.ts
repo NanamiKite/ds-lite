@@ -31,13 +31,15 @@ const s = (id: string, title: string): ExportSession => ({
 
 test('备份 JSON：结构标记与识别', () => {
   const b = buildBackup([s('1', '里斯本')], [{ content: '素食者', source: 'manual', active: true, createdAt: 1 }]);
-  assert.equal(b.app, 'deepseek-lite');
+  assert.equal(b.app, 'ds-lite');
   assert.equal(b.schema, 1);
   assert.ok(isBackupJson(b));
   assert.ok(!isBackupJson({ app: 'other' }));
   assert.ok(!isBackupJson(null));
   // 往返：JSON 序列化后仍可识别
   assert.ok(isBackupJson(JSON.parse(JSON.stringify(b))));
+  // 兼容旧版 deepseek-lite 备份标记
+  assert.ok(isBackupJson({ app: 'deepseek-lite', sessions: [] }));
 });
 
 test('单会话 Markdown：标题/摘要/角色标签；默认不含思维链（隐私）', () => {
@@ -54,7 +56,7 @@ test('单会话 Markdown：标题/摘要/角色标签；默认不含思维链（
 
 test('全会话 Markdown：汇总头部与分隔', () => {
   const md = sessionsToMarkdown([s('1', 'A'), s('2', 'B')]);
-  assert.ok(md.includes('# DeepSeek Lite 对话记录'));
+  assert.ok(md.includes('# DS Lite 对话记录'));
   assert.ok(md.includes('2 个对话'));
   assert.ok(md.includes('# A') && md.includes('# B'));
 });

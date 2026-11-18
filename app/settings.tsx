@@ -63,7 +63,7 @@ export default function SettingsScreen() {
       });
       const json = JSON.parse(text) as unknown;
       if (!isBackupJson(json)) {
-        Alert.alert('格式不对', '请选择 deepseek-lite 导出的备份 JSON');
+        Alert.alert('格式不对', '请选择 DS Lite 导出的备份 JSON');
         return;
       }
       const sanitized = sanitizeBackupSessions(json.sessions);

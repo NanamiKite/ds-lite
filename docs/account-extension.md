@@ -1,6 +1,6 @@
 # 账号体系扩展指南
 
-deepseek-lite 当前使用 `LocalKeyAccount`：引导用户到 platform.deepseek.com 注册、
+ds-lite 当前使用 `LocalKeyAccount`：引导用户到 platform.deepseek.com 注册、
 创建 API Key，粘贴后校验并保存到系统安全存储（Keychain / Keystore）。
 不需要任何自建后端。
 

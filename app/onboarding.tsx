@@ -105,7 +105,7 @@ export default function Onboarding() {
               resizeMode="contain"
             />
           </View>
-          <Text style={[styles.h1, { color: colors.text }]}>DeepSeek Lite</Text>
+          <Text style={[styles.h1, { color: colors.text }]}>DS Lite</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             轻量、原生的 DeepSeek 对话客户端{'\n'}支持导入 ChatGPT / Gemini / DeepSeek 历史对话
           </Text>

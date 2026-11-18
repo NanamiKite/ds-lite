@@ -28,13 +28,13 @@ export async function shareJsonBackup(): Promise<void> {
     createdAt: m.createdAt,
   }));
   const payload = buildBackup(sessions, memories);
-  await shareFile(`deepseek-lite-backup-${stamp()}.json`, JSON.stringify(payload, null, 2), 'application/json');
+  await shareFile(`ds-lite-backup-${stamp()}.json`, JSON.stringify(payload, null, 2), 'application/json');
 }
 
 /** 全部对话导出为 Markdown */
 export async function shareAllMarkdown(): Promise<void> {
   const md = sessionsToMarkdown(exportAllSessions());
-  await shareFile(`deepseek-lite-对话-${stamp()}.md`, md, 'text/markdown');
+  await shareFile(`ds-lite-对话-${stamp()}.md`, md, 'text/markdown');
 }
 
 /** 单个对话导出为 Markdown（含摘要） */

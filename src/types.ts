@@ -1,5 +1,5 @@
 /**
- * deepseek-lite 共享领域类型
+ * ds-lite 共享领域类型
  */
 
 export type Role = 'user' | 'assistant' | 'system';

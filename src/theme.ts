@@ -1,5 +1,5 @@
 /**
- * deepseek-lite 主题：对齐官方 DeepSeek App 的视觉语言
+ * ds-lite 主题：对齐官方 DeepSeek App 的视觉语言
  * - 品牌蓝 #4D6BFE
  * - 用户消息：右侧浅蓝气泡；助手消息：左侧无气泡纯文本
  */
