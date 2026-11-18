@@ -11,6 +11,7 @@ import { validateKey } from '@/api/deepseek';
 import { getAccountProvider } from '@/account/provider';
 import { dbStats } from '@/db/repo';
 import { countMemories } from '@/db/memoryRepo';
+import { ActionSheet } from '@/components/ActionSheet';
 import { useSettings, type ThemeMode } from '@/state/settings';
 import { DS_BLUE } from '@/theme';
 import { useTheme } from '@/theme-context';
@@ -21,19 +22,13 @@ export default function SettingsScreen() {
   const settings = useSettings();
 
   const [checking, setChecking] = useState(false);
+  const [unbindOpen, setUnbindOpen] = useState(false);
 
-  const unbind = () => {
-    Alert.alert('解绑 API Key', '解绑后将无法发送新消息（历史对话保留）。', [
-      { text: '取消', style: 'cancel' },
-      {
-        text: '解绑',
-        style: 'destructive',
-        onPress: async () => {
-          await getAccountProvider().unbind();
-          await settings.refreshKeys();
-        },
-      },
-    ]);
+  const unbind = () => setUnbindOpen(true);
+
+  const doUnbind = async () => {
+    await getAccountProvider().unbind();
+    await settings.refreshKeys();
   };
 
   const checkBalance = async () => {
@@ -170,6 +165,16 @@ export default function SettingsScreen() {
           </Text>
         </Group>
       </ScrollView>
+
+      <ActionSheet
+        visible={unbindOpen}
+        onClose={() => setUnbindOpen(false)}
+        title="解绑 API Key"
+        subtitle="解绑后将无法发送新消息，历史对话保留"
+        actions={[
+          { key: 'unbind', label: '确认解绑', icon: '⚡', danger: true, onPress: doUnbind },
+        ]}
+      />
     </View>
   );
 }

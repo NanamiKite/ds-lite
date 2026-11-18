@@ -4,9 +4,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
-  Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View,
+  FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
 import { createSession, listSessions, togglePin, deleteSession, renameSession } from '@/db/repo';
 import { SOURCE_COLOR, SOURCE_LABEL, type Session } from '@/types';
 import { useTheme } from '@/theme-context';
@@ -31,6 +32,8 @@ export default function ChatsScreen() {
   const [query, setQuery] = useState('');
   const [renaming, setRenaming] = useState<Session | null>(null);
   const [renameText, setRenameText] = useState('');
+  const [sheetSession, setSheetSession] = useState<Session | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const clearLive = useChatStore((s) => s.clearLive);
 
   const reload = useCallback(() => {
@@ -50,26 +53,44 @@ export default function ChatsScreen() {
   };
 
   const openMenu = (s: Session) => {
-    Alert.alert(s.title.slice(0, 40), undefined, [
-      { text: s.pinned ? '取消置顶' : '置顶', onPress: () => { togglePin(s.id); reload(); } },
-      {
-        text: '重命名',
-        onPress: () => {
-          setRenaming(s);
-          setRenameText(s.title);
-        },
-      },
-      {
-        text: '删除',
-        style: 'destructive',
-        onPress: () => {
-          deleteSession(s.id);
-          reload();
-        },
-      },
-      { text: '取消', style: 'cancel' },
-    ]);
+    setConfirmDelete(false);
+    setSheetSession(s);
   };
+
+  const sheetActions: SheetAction[] = sheetSession
+    ? confirmDelete
+      ? [
+          {
+            key: 'confirm-del',
+            label: `删除「${sheetSession.title.slice(0, 16)}」，不可恢复`,
+            icon: '🗑',
+            danger: true,
+            onPress: () => { deleteSession(sheetSession.id); reload(); },
+          },
+        ]
+      : [
+          {
+            key: 'pin',
+            label: sheetSession.pinned ? '取消置顶' : '置顶',
+            icon: '📌',
+            onPress: () => { togglePin(sheetSession.id); reload(); },
+          },
+          {
+            key: 'rename',
+            label: '重命名',
+            icon: '✎',
+            onPress: () => { setRenaming(sheetSession); setRenameText(sheetSession.title); },
+          },
+          {
+            key: 'del',
+            label: '删除对话',
+            icon: '🗑',
+            danger: true,
+            keepOpen: true,
+            onPress: () => setConfirmDelete(true),
+          },
+        ]
+    : [];
 
   const applyRename = () => {
     if (renaming && renameText.trim()) {
@@ -165,6 +186,14 @@ export default function ChatsScreen() {
           <Text style={{ color: '#fff', fontSize: 26, fontWeight: '300', marginTop: -2 }}>＋</Text>
         </Pressable>
       )}
+
+      <ActionSheet
+        visible={!!sheetSession}
+        onClose={() => setSheetSession(null)}
+        title={confirmDelete ? '确认删除' : sheetSession?.title}
+        subtitle={confirmDelete ? '删除后无法恢复' : undefined}
+        actions={sheetActions}
+      />
 
       <Modal visible={!!renaming} transparent animationType="fade" onRequestClose={() => setRenaming(null)}>
         <Pressable style={styles.modalMask} onPress={() => setRenaming(null)}>

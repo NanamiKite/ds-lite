@@ -11,6 +11,7 @@ import {
   Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
 import { addMemory, deleteMemory, importMemories, listMemories, updateMemory, type MemoryItem } from '@/db/memoryRepo';
 import { parseMemoriesText } from '@/memory/parse';
 import { useSettings, type MemoryMode } from '@/state/settings';
@@ -35,23 +36,51 @@ export default function MemoriesScreen() {
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [sheetMemory, setSheetMemory] = useState<MemoryItem | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const reload = () => setItems(listMemories());
+
+  const sheetActions: SheetAction[] = sheetMemory
+    ? confirmDelete
+      ? [
+          {
+            key: 'confirm-del',
+            label: '确认删除这条记忆',
+            icon: '🗑',
+            danger: true,
+            onPress: () => { deleteMemory(sheetMemory.id); reload(); },
+          },
+        ]
+      : [
+          {
+            key: 'toggle',
+            label: sheetMemory.active ? '停用（不注入对话）' : '启用',
+            icon: sheetMemory.active ? '⏸' : '▶',
+            onPress: () => { updateMemory(sheetMemory.id, { active: !sheetMemory.active }); reload(); },
+          },
+          {
+            key: 'edit',
+            label: '编辑',
+            icon: '✎',
+            onPress: () => { setEditing(sheetMemory); setEditText(sheetMemory.content); },
+          },
+          {
+            key: 'del',
+            label: '删除',
+            icon: '🗑',
+            danger: true,
+            keepOpen: true,
+            onPress: () => setConfirmDelete(true),
+          },
+        ]
+    : [];
 
   const add = () => {
     if (!newText.trim()) return;
     addMemory(newText, 'manual');
     setNewText('');
     reload();
-  };
-
-  const openMenu = (m: MemoryItem) => {
-    Alert.alert(m.content.slice(0, 40), undefined, [
-      { text: m.active ? '停用（不注入对话）' : '启用', onPress: () => { updateMemory(m.id, { active: !m.active }); reload(); } },
-      { text: '编辑', onPress: () => { setEditing(m); setEditText(m.content); } },
-      { text: '删除', style: 'destructive', onPress: () => { deleteMemory(m.id); reload(); } },
-      { text: '取消', style: 'cancel' },
-    ]);
   };
 
   const importFile = async () => {
@@ -166,7 +195,7 @@ export default function MemoriesScreen() {
                 { backgroundColor: pressed ? colors.surfaceAlt : colors.surface, borderColor: colors.border },
                 !item.active && { opacity: 0.45 },
               ]}
-              onPress={() => openMenu(item)}
+              onPress={() => { setConfirmDelete(false); setSheetMemory(item); }}
             >
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.text, fontSize: 14.5, lineHeight: 20 }} numberOfLines={3}>
@@ -185,6 +214,14 @@ export default function MemoriesScreen() {
           )}
         />
       </ScrollView>
+
+      <ActionSheet
+        visible={!!sheetMemory}
+        onClose={() => setSheetMemory(null)}
+        title={confirmDelete ? '确认删除' : undefined}
+        subtitle={confirmDelete ? sheetMemory?.content.slice(0, 50) : undefined}
+        actions={sheetActions}
+      />
 
       <Modal visible={!!editing} transparent animationType="fade" onRequestClose={() => setEditing(null)}>
         <Pressable style={styles.mask} onPress={() => setEditing(null)}>

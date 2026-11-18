@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { MessageBubble } from '@/components/MessageBubble';
 import { ChatInput } from '@/components/ChatInput';
+import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
 import { getSession, listMessages, setSessionMemoryEnabled } from '@/db/repo';
 import { useChatStore } from '@/state/chat';
 import { useSettings } from '@/state/settings';
@@ -43,6 +44,7 @@ export default function ChatScreen() {
   const [digestOpen, setDigestOpen] = useState(false);
   const [digestBusy, setDigestBusy] = useState(false);
   const [memEnabled, setMemEnabled] = useState<boolean | null>(null);
+  const [msgSheet, setMsgSheet] = useState<ChatMessage | null>(null);
 
   const live = useChatStore((s) => s.live);
   const tick = useChatStore((s) => s.tick);
@@ -135,6 +137,25 @@ export default function ChatScreen() {
     if (!digest) return;
     Clipboard.setStringAsync(digest).then(() => Alert.alert('已复制', '摘要已复制到剪贴板')).catch(() => undefined);
   };
+
+  const msgSheetActions: SheetAction[] = msgSheet
+    ? [
+        {
+          key: 'copy',
+          label: '复制全文',
+          icon: '⧉',
+          onPress: () => { Clipboard.setStringAsync(msgSheet.content).catch(() => undefined); },
+        },
+        ...(msgSheet.role === 'assistant' && msgSheet.id === lastAssistantId && !busy
+          ? [{
+              key: 'regen',
+              label: '重新生成',
+              icon: '↻',
+              onPress: () => regenerate(sessionId, { thinking, search }),
+            }]
+          : []),
+      ]
+    : [];
 
   const shareDigest = async () => {
     if (!digest) return;
@@ -252,6 +273,7 @@ export default function ChatScreen() {
                 isLive={item.id === live?.messageId && live?.sessionId === sessionId}
                 canRegenerate={item.id === lastAssistantId && !busy}
                 onRegenerate={() => regenerate(sessionId, { thinking, search })}
+                onLongPress={() => setMsgSheet(item)}
               />
             )}
           />
@@ -280,6 +302,14 @@ export default function ChatScreen() {
           onToggleSearch={() => setSearch((v) => !v)}
         />
       </KeyboardAvoidingView>
+
+      {/* 消息长按菜单（主题化） */}
+      <ActionSheet
+        visible={!!msgSheet}
+        onClose={() => setMsgSheet(null)}
+        title={msgSheet?.role === 'user' ? '用户消息' : '助手消息'}
+        actions={msgSheetActions}
+      />
 
       {/* 会话摘要：点击标题查看，支持复制/分享（发小红书直接粘贴） */}
       <Modal visible={digestOpen} transparent animationType="fade" onRequestClose={() => setDigestOpen(false)}>

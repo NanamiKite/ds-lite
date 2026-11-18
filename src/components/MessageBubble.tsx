@@ -3,8 +3,7 @@
  * 含：思维链折叠面板、流式光标、搜索来源、错误/停止状态
  */
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ChatMessage } from '@/types';
 import { useTheme } from '@/theme-context';
 import { MarkdownView } from './MarkdownView';
@@ -14,9 +13,11 @@ interface Props {
   isLive?: boolean;
   canRegenerate?: boolean;
   onRegenerate?: () => void;
+  /** 长按消息（由聊天页弹出主题化菜单：复制/重新生成等） */
+  onLongPress?: () => void;
 }
 
-export function MessageBubble({ message, isLive, canRegenerate, onRegenerate }: Props) {
+export function MessageBubble({ message, isLive, canRegenerate, onRegenerate, onLongPress }: Props) {
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(false);
 
@@ -24,7 +25,7 @@ export function MessageBubble({ message, isLive, canRegenerate, onRegenerate }: 
     return (
       <View style={styles.userRow}>
         <Pressable
-          onLongPress={() => confirmCopy(message.content, colors)}
+          onLongPress={onLongPress}
           style={[styles.userBubble, { backgroundColor: colors.userBubble }]}
         >
           <Text style={[styles.userText, { color: colors.userBubbleText }]}>{message.content}</Text>
@@ -56,14 +57,14 @@ export function MessageBubble({ message, isLive, canRegenerate, onRegenerate }: 
       {message.content ? (
         isLive && message.status === 'streaming' ? (
           // 流式过程中用纯文本+光标（避免反复解析半截 Markdown 闪烁）
-          <Pressable onLongPress={() => confirmCopy(message.content, colors)}>
+          <Pressable onLongPress={onLongPress}>
             <Text style={[styles.assistantText, { color: colors.text }]}>
               {message.content}
               <Text style={{ color: colors.primary }}>▍</Text>
             </Text>
           </Pressable>
         ) : (
-          <Pressable onLongPress={() => confirmCopy(message.content, colors)}>
+          <Pressable onLongPress={onLongPress}>
             <MarkdownView text={message.content} />
           </Pressable>
         )
@@ -110,18 +111,6 @@ export function MessageBubble({ message, isLive, canRegenerate, onRegenerate }: 
       )}
     </View>
   );
-}
-
-function confirmCopy(text: string, _colors: ReturnType<typeof useTheme>['colors']) {
-  Alert.alert('复制内容', text.slice(0, 120) + (text.length > 120 ? '…' : ''), [
-    { text: '取消', style: 'cancel' },
-    {
-      text: '复制全部',
-      onPress: () => {
-        Clipboard.setStringAsync(text).catch(() => undefined);
-      },
-    },
-  ]);
 }
 
 function Dot({ colors, delay }: { colors: ReturnType<typeof useTheme>['colors']; delay: number }) {
