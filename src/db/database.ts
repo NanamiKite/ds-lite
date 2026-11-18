@@ -101,7 +101,14 @@ function migrate(db: SQLite.SQLiteDatabase): void {
 
   if (current < 5) {
     db.withTransactionSync(() => {
+      // 历史 bug（非原子 MAX(seq)+1）可能留下重复 (session_id, seq)，
+      // 先按 rowid（插入序）重编号为连续值再去建唯一索引，否则迁移失败应用无法启动。
+      // 该 SQL 已用内存库验证：1,1,1,3 → 1,2,3,4 且保持顺序
       db.execSync(`
+        UPDATE messages SET seq = (
+          SELECT COUNT(*) FROM messages m2
+          WHERE m2.session_id = messages.session_id AND m2.rowid < messages.rowid
+        ) + 1;
         CREATE UNIQUE INDEX IF NOT EXISTS idx_messages_session_seq
           ON messages(session_id, seq);
       `);

@@ -3,6 +3,7 @@
  */
 import { getDb } from './database';
 import { uuid } from '@/theme';
+import { sanitizeBackupSessions } from '@/export/format';
 import type {
   ChatMessage,
   ImportedMeta,
@@ -419,11 +420,11 @@ export function exportAllSessions(): {
   }));
 }
 
-/** 从备份恢复（幂等：按会话 id 跳过已存在） */
-export function importBackup(sessions: {
-  id: string; title: string; source?: string; createdAt?: number; updatedAt?: number;
-  digest?: string | null; messages: { role: string; content: string; createdAt?: number }[];
-}[]): { imported: number; skipped: number } {
+/** 从备份恢复（幂等：按会话 id 跳过已存在；入参应先经 sanitizeBackupSessions 清洗） */
+export function importBackup(sessions: ReturnType<typeof sanitizeBackupSessions>['sessions']): {
+  imported: number;
+  skipped: number;
+} {
   const db = getDb();
   const result = { imported: 0, skipped: 0 };
   for (const s of sessions) {
@@ -438,7 +439,6 @@ export function importBackup(sessions: {
         [s.id, s.title || '导入对话', s.source ?? 'local', base, s.updatedAt ?? base + s.messages.length, s.digest ?? null]
       );
       s.messages.forEach((m, i) => {
-        if (!m.content?.trim()) return;
         db.runSync(
           `INSERT INTO messages (id, session_id, role, content, reasoning, created_at, status, error, meta, seq)
            VALUES (?, ?, ?, ?, NULL, ?, 'done', NULL, NULL, ?)`,

@@ -16,7 +16,7 @@ import { dbStats, importBackup } from '@/db/repo';
 import { countMemories, importMemories } from '@/db/memoryRepo';
 import { ActionSheet } from '@/components/ActionSheet';
 import { shareAllMarkdown, shareJsonBackup } from '@/export/share';
-import { isBackupJson } from '@/export/format';
+import { isBackupJson, sanitizeBackupSessions } from '@/export/format';
 import { useSettings, type ThemeMode } from '@/state/settings';
 import { DS_BLUE } from '@/theme';
 import { useTheme } from '@/theme-context';
@@ -66,11 +66,17 @@ export default function SettingsScreen() {
         Alert.alert('格式不对', '请选择 deepseek-lite 导出的备份 JSON');
         return;
       }
-      const r = importBackup(json.sessions);
-      const memNew = importMemories(json.memories.filter((m) => m.active).map((m) => m.content), 'import');
+      const sanitized = sanitizeBackupSessions(json.sessions);
+      const r = importBackup(sanitized.sessions);
+      const memItems = (Array.isArray(json.memories) ? json.memories : [])
+        .filter((m) => m && typeof m === 'object' && typeof (m as { content?: unknown }).content === 'string' && (m as { active?: unknown }).active);
+      const memNew = importMemories(memItems.map((m) => (m as { content: string }).content), 'import');
       Alert.alert(
         '恢复完成',
-        `导入 ${r.imported} 个对话${r.skipped ? `，跳过 ${r.skipped} 个（已存在）` : ''}；新增记忆 ${memNew} 条`
+        `导入 ${r.imported} 个对话${r.skipped ? `，跳过 ${r.skipped} 个（已存在）` : ''}` +
+          `${sanitized.skippedSessions ? `，忽略损坏会话 ${sanitized.skippedSessions} 个` : ''}` +
+          `${sanitized.skippedMessages ? `、损坏消息 ${sanitized.skippedMessages} 条` : ''}` +
+          `；新增记忆 ${memNew} 条`
       );
     } catch (e) {
       Alert.alert('恢复失败', e instanceof Error ? e.message : String(e));

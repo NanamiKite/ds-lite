@@ -269,6 +269,17 @@ test('格式识别：首条消息损坏不误导（DeepSeek 特征字段在后�
   assert.equal(r.conversations[0].messages.length, 2);
 });
 
+test('DeepSeek 数字会话 ID：归一化保留（不退化到指纹）', () => {
+  const raw = JSON.stringify([{
+    id: 12345, title: '数字ID会话', created_at: 1700000000,
+    messages: [
+      { message_id: 'a', parent_id: null, message_role: 'USER', content: 'hi', created_at: 1700000001 },
+    ],
+  }]);
+  const r = parseExportText(raw);
+  assert.equal(r.conversations[0].sourceId, '12345');
+});
+
 const failed = results.filter((r) => !r.ok);
 for (const r of results) {
   console.log(`${r.ok ? '✓' : '✗'} ${r.name}${r.note ? ` — ${r.note}` : ''}`);

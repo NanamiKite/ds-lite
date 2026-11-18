@@ -17,10 +17,6 @@
     "platforms": [
       "android"
     ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.dslite.app"
-    },
     "android": {
       "package": "com.dslite.app",
       "edgeToEdgeEnabled": true,

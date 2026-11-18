@@ -210,7 +210,8 @@ export function parseDeepSeekWeb(raw: unknown): DeepSeekParseResult {
     if (!msgs.length) continue;
     messageCount += msgs.length;
     conversations.push({
-      sourceId: cleanText(s.id ?? s.chat_session_id ?? s.session_id ?? s.conversation_id) || null,
+      // 会话 ID 与消息 ID 同一归一化（数字/字符串皆可）
+      sourceId: normalizeId(s.id ?? s.chat_session_id ?? s.session_id ?? s.conversation_id),
       title: cleanText(s.title) || titleFromMessages(msgs),
       createdAt: baseTime,
       messages: msgs,

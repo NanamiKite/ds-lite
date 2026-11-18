@@ -224,6 +224,9 @@ export async function streamChat(opts: StreamChatOptions): Promise<void> {
         handleEvent(ev.data);
       }
     }
+    // flush TextDecoder：最后一个多字节字符可能拆在末尾 chunk，残留字节需补解码
+    const tail = decoder.decode();
+    for (const ev of sse.push(tail)) handleEvent(ev.data);
     for (const ev of sse.flush()) handleEvent(ev.data);
   } finally {
     try { reader.releaseLock(); } catch { /* ignore */ }

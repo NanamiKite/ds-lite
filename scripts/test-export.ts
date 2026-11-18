@@ -3,7 +3,7 @@
  */
 import assert from 'node:assert/strict';
 import {
-  buildBackup, isBackupJson, sessionToMarkdown, sessionsToMarkdown,
+  buildBackup, isBackupJson, sanitizeBackupSessions, sessionToMarkdown, sessionsToMarkdown,
   type ExportSession,
 } from '../src/export/format';
 
@@ -57,6 +57,29 @@ test('全会话 Markdown：汇总头部与分隔', () => {
   assert.ok(md.includes('# DeepSeek Lite 对话记录'));
   assert.ok(md.includes('2 个对话'));
   assert.ok(md.includes('# A') && md.includes('# B'));
+});
+
+test('备份清洗：损坏会话/消息跳过，合法数据保留', () => {
+  const raw = [
+    { id: 'ok1', title: 'A', messages: [
+      { role: 'user', content: 'q', createdAt: 1 },
+      { role: 'system', content: 'sys 应跳过' },            // 非法 role
+      null,                                                    // 损坏消息
+      { role: 'assistant', content: 123 },                    // content 非字符串
+    ] },
+    null,                                                      // 损坏会话
+    { title: '无 id 应跳过', messages: [{ role: 'user', content: 'x' }] },
+    { id: 'bad', messages: 'not-array' },                      // messages 非数组 → 会话跳过
+    { id: 99, messages: [{ role: 'assistant', content: '答' }] }, // 数字 id 保留
+  ];
+  const s = sanitizeBackupSessions(raw);
+  assert.equal(s.sessions.length, 2);
+  assert.equal(s.sessions[0].id, 'ok1');
+  assert.equal(s.sessions[0].messages.length, 1, '仅保留合法消息');
+  assert.equal(s.sessions[1].id, '99', '数字 id 归一化');
+  assert.equal(s.skippedSessions, 3);
+  assert.equal(s.skippedMessages, 3);
+  assert.equal(sanitizeBackupSessions(null).sessions.length, 0, '顶层非数组不崩');
 });
 
 const failed = results.filter((r) => !r.ok);
