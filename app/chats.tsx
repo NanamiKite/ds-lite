@@ -220,7 +220,7 @@ export default function ChatsScreen() {
             friction={2}
           >
             <Pressable
-              style={({ pressed }) => [styles.row, { backgroundColor: pressed ? colors.surfaceAlt : 'transparent' }]}
+              style={({ pressed }) => [styles.row, { backgroundColor: pressed ? colors.surfaceAlt : colors.background }]}
               onPress={() => router.push(`/chat/${item.id}`)}
               onLongPress={() => openMenu(item)}
             >
